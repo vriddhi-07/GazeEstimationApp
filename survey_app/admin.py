@@ -8,6 +8,7 @@ from .models import (
     Review,
     ScreenClip,
     WebcamClip,
+    PaasResponse
 )
 
 admin.site.register(ParticipantSession)
@@ -17,3 +18,6 @@ admin.site.register(MovieSelection)
 admin.site.register(WebcamClip)
 admin.site.register(ScreenClip)
 admin.site.register(MovieReviewResponse)
+@admin.register(PaasResponse)
+class PaasResponseAdmin(admin.ModelAdmin):
+    list_display = ('participant', 'task_number', 'rating', 'created_at')
