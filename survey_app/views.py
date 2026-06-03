@@ -23,6 +23,7 @@ from .models import (
     Review,
     ScreenClip,
     WebcamClip,
+    PaasResponse
 )
 from .movie_data import MOVIES
 from .news_data import NEWS_ARTICLES
@@ -910,12 +911,25 @@ def next_task_view(request: HttpRequest) -> HttpResponse:
     onboarding_redirect = get_onboarding_redirect(participant, request)
     if onboarding_redirect:
         return redirect(onboarding_redirect)
+        
+    # Check Task 1 (Movies)
     if not get_review_progress(participant)["minimum_met"]:
         return redirect("survey_app:carousel")
+    if not participant.paas_responses.filter(task_number=1).exists():
+        return redirect("survey_app:paas_evaluation", task_number=1)
+
+    # Check Task 2 (News)
     if not get_news_progress(participant)["minimum_met"]:
         return redirect("survey_app:news_carousel")
+    if not participant.paas_responses.filter(task_number=2).exists():
+        return redirect("survey_app:paas_evaluation", task_number=2)
+
+    # Check Task 3 (Networks)
     if not get_network_progress(participant)["minimum_met"]:
         return redirect("survey_app:network_carousel")
+    if not participant.paas_responses.filter(task_number=3).exists():
+        return redirect("survey_app:paas_evaluation", task_number=3)
+
     return redirect("survey_app:thank_you")
 
 
@@ -1029,3 +1043,45 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
         webm_path.unlink()
 
     return JsonResponse({"ok": True, "file": converted_path})
+
+
+@require_http_methods(["GET", "POST"])
+def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse:
+    participant = get_or_create_participant(request)
+    onboarding_redirect = get_onboarding_redirect(participant, request)
+    if onboarding_redirect:
+        return redirect(onboarding_redirect)
+
+    if PaasResponse.objects.filter(participant=participant, task_number=task_number).exists():
+        return redirect("survey_app:next_task")
+
+    if request.method == "POST":
+        rating = request.POST.get("paas_rating")
+        if rating and rating.isdigit() and 1 <= int(rating) <= 9:
+            PaasResponse.objects.update_or_create(
+                participant=participant,
+                task_number=task_number,
+                defaults={"rating": int(rating)}
+            )
+            
+            return redirect("survey_app:next_task")
+            
+        else:
+            return render(
+                request, 
+                "survey_app/paas_evaluation.html", 
+                {
+                    "task_number": task_number,
+                    "error_message": "Please select a mental effort rating from 1 to 9.",
+                    "record_webcam": True,
+                }
+            )
+
+    return render(
+        request, 
+        "survey_app/paas_evaluation.html", 
+        {
+            "task_number": task_number,
+            "record_webcam": True,
+        }
+    )
