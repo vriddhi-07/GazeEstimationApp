@@ -1,0 +1,200 @@
+{% extends "survey_app/base.html" %}
+
+{% block content %}
+<style>
+  .paas-slider-container {
+    margin: 3rem auto;
+    max-width: 950px;
+    text-align: center;
+    position: relative;
+    padding: 0 40px; /* Added horizontal padding to create breathing room from the white card borders */
+    box-sizing: border-box;
+  }
+
+  /* Core slider track styling */
+  .paas-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #e0e0e0;
+    outline: none;
+    margin: 0; 
+    padding: 0;
+  }
+
+  /* Custom slider thumb for WebKit browsers */
+  .paas-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0e7a58;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+    z-index: 2;
+  }
+  .paas-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  /* Custom slider thumb for Firefox */
+  .paas-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0e7a58;
+    cursor: pointer;
+    border: none;
+    position: relative;
+    z-index: 2;
+  }
+  .paas-slider::-moz-range-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  /* This container perfectly matches the travel path of the center of the thumb */
+  .slider-labels-track {
+    position: relative;
+    margin: 15px 14px 0 14px; 
+    height: 80px; 
+  }
+
+  /* Individual column for each scale point */
+  .slider-label-col {
+    position: absolute;
+    top: 0;
+    width: 11%; 
+    margin-left: -5.5%; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #777;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .slider-label-col .num {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #444;
+  }
+
+  .slider-label-col .text {
+    font-size: 0.75rem; 
+    line-height: 1.15;
+    padding: 0;
+  }
+
+  /* Highlight class applied via JavaScript */
+  .slider-label-col.active {
+    color: #0e7a58;
+    transform: translateY(-2px);
+  }
+  .slider-label-col.active .num {
+    color: #0e7a58;
+  }
+  .slider-label-col.active .text {
+    font-weight: 600;
+  }
+
+  /* Precise mathematical alignment */
+  #label-1 { left: 0%; }
+  #label-2 { left: 12.5%; }
+  #label-3 { left: 25%; }
+  #label-4 { left: 37.5%; }
+  #label-5 { left: 50%; }
+  #label-6 { left: 62.5%; }
+  #label-7 { left: 75%; }
+  #label-8 { left: 87.5%; }
+  #label-9 { left: 100%; }
+</style>
+
+<section class="question-stage">
+  <form method="post" class="question-form card">
+    {% csrf_token %}
+    {% if error_message %}
+      <p class="error">{{ error_message }}</p>
+    {% endif %}
+
+    <div class="question-block large">
+      <h2>Task Completed</h2>
+      <p>Please rate your experience with the 
+        {% if task_number == 1 %}movie review
+        {% elif task_number == 2 %}news classification
+        {% elif task_number == 3 %}network diagram
+        {% endif %} task.
+      </p>
+      
+      <h3 style="margin-top: 2rem;">Please rate your mental effort required to complete this task:</h3>
+      
+      <div class="paas-slider-container">
+        <input type="range" min="1" max="9" step="1" class="paas-slider" id="paasSlider" name="paas_rating" value="{{ existing_rating|default:5 }}">
+        
+        <div class="slider-labels-track" id="sliderLabels">
+          <div class="slider-label-col" id="label-1">
+            <span class="num">1</span>
+            <span class="text">very very low<br>mental effort</span>
+          </div>
+          <div class="slider-label-col" id="label-2">
+            <span class="num">2</span>
+            <span class="text">very low<br>mental effort</span>
+          </div>
+          <div class="slider-label-col" id="label-3">
+            <span class="num">3</span>
+            <span class="text">low mental<br>effort</span>
+          </div>
+          <div class="slider-label-col" id="label-4">
+            <span class="num">4</span>
+            <span class="text">minimal<br>mental effort</span>
+          </div>
+          <div class="slider-label-col" id="label-5">
+            <span class="num">5</span>
+            <span class="text">neither high<br>nor low<br>mental effort</span>
+          </div>
+          <div class="slider-label-col" id="label-6">
+            <span class="num">6</span>
+            <span class="text">some mental<br>effort</span>
+          </div>
+          <div class="slider-label-col" id="label-7">
+            <span class="num">7</span>
+            <span class="text">high mental<br>effort</span>
+          </div>
+          <div class="slider-label-col" id="label-8">
+            <span class="num">8</span>
+            <span class="text">very high<br>mental effort</span>
+          </div>
+          <div class="slider-label-col" id="label-9">
+            <span class="num">9</span>
+            <span class="text">very very high<br>mental effort</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn">Submit Rating</button>
+  </form>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const slider = document.getElementById("paasSlider");
+    
+    function updateActiveLabel() {
+      const allLabels = document.querySelectorAll(".slider-label-col");
+      allLabels.forEach(label => label.classList.remove("active"));
+      
+      const activeLabel = document.getElementById("label-" + slider.value);
+      if (activeLabel) {
+        activeLabel.classList.add("active");
+      }
+    }
+
+    updateActiveLabel();
+    slider.addEventListener("input", updateActiveLabel);
+  });
+</script>
+{% endblock %}
