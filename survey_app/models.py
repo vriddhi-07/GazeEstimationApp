@@ -183,3 +183,21 @@ class NetworkDiagramResponse(models.Model):
                 name="unique_network_response_per_participant",
             )
         ]
+
+class PaasResponse(models.Model):
+    participant = models.ForeignKey(
+        ParticipantSession, 
+        on_delete=models.CASCADE, 
+        related_name="paas_responses"
+    )
+    task_number = models.PositiveSmallIntegerField() # 1=Movies, 2=News, 3=Networks
+    rating = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["participant", "task_number"],
+                name="unique_paas_per_task_participant",
+            )
+        ]
