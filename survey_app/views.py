@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
+import threading
 import time
 
 from django.conf import settings
@@ -1005,18 +1006,46 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
 
     webm_relative_path = f"tmp_recordings/webcam-{participant.id}-{session_stamp}.webm"
     mp4_relative_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.mp4"
-    converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
-    if not converted_path:
-        return JsonResponse({"ok": False, "error": "Conversion failed"}, status=500)
+    webm_fallback_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.webm"
+    participant_id = participant.id
 
-    remove_stale_partial_file(mp4_relative_path)
-    WebcamClip.objects.get_or_create(participant=participant, clip=converted_path)
+    def _convert():
+        # Try ffmpeg conversion to mp4 first.
+        converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
+        if converted_path:
+            remove_stale_partial_file(mp4_relative_path)
+        else:
+            # ffmpeg not available or failed (common on Windows without ffmpeg in PATH).
+            # Fall back to storing the original .webm directly so the file is at
+            # least accessible even without mp4 conversion.
+            src = Path(settings.MEDIA_ROOT) / webm_relative_path
+            dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                src.rename(dst)
+                converted_path = webm_fallback_path
+            except OSError:
+                import logging
+                logging.getLogger(__name__).error(
+                    "Could not move webm to fallback path: %s -> %s", src, dst
+                )
+                return
 
-    webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
-    if webm_path.exists():
-        webm_path.unlink()
+        from .models import ParticipantSession as _PS, WebcamClip as _WC
+        p = _PS.objects.filter(id=participant_id).first()
+        if p:
+            _WC.objects.get_or_create(participant=p, clip=converted_path)
 
-    return JsonResponse({"ok": True, "file": converted_path})
+        # Clean up the raw temp file if it still exists (mp4 path is different).
+        webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
+        if webm_path.exists():
+            try:
+                webm_path.unlink()
+            except OSError:
+                pass
+
+    threading.Thread(target=_convert, daemon=True).start()
+    return JsonResponse({"ok": True, "queued": True})
 
 
 @require_POST
@@ -1031,18 +1060,41 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
 
     webm_relative_path = f"tmp_recordings/screen-{participant.id}-{session_stamp}.webm"
     mp4_relative_path = f"screen_clips/screen-{participant.id}-{session_stamp}.mp4"
-    converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
-    if not converted_path:
-        return JsonResponse({"ok": False, "error": "Conversion failed"}, status=500)
+    webm_fallback_path = f"screen_clips/screen-{participant.id}-{session_stamp}.webm"
+    participant_id = participant.id
 
-    remove_stale_partial_file(mp4_relative_path)
-    ScreenClip.objects.get_or_create(participant=participant, clip=converted_path)
+    def _convert():
+        converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
+        if converted_path:
+            remove_stale_partial_file(mp4_relative_path)
+        else:
+            src = Path(settings.MEDIA_ROOT) / webm_relative_path
+            dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                src.rename(dst)
+                converted_path = webm_fallback_path
+            except OSError:
+                import logging
+                logging.getLogger(__name__).error(
+                    "Could not move webm to fallback path: %s -> %s", src, dst
+                )
+                return
 
-    webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
-    if webm_path.exists():
-        webm_path.unlink()
+        from .models import ParticipantSession as _PS, ScreenClip as _SC
+        p = _PS.objects.filter(id=participant_id).first()
+        if p:
+            _SC.objects.get_or_create(participant=p, clip=converted_path)
 
-    return JsonResponse({"ok": True, "file": converted_path})
+        webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
+        if webm_path.exists():
+            try:
+                webm_path.unlink()
+            except OSError:
+                pass
+
+    threading.Thread(target=_convert, daemon=True).start()
+    return JsonResponse({"ok": True, "queued": True})
 
 
 @require_http_methods(["GET", "POST"])
