@@ -1,10 +1,11 @@
 import uuid
-
 from django.db import models
-
+from django.contrib.auth.models import User, Group
 
 class ParticipantSession(models.Model):
     session_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    
     participant_tag = models.CharField(max_length=64, blank=True)
     consent_given = models.BooleanField(default=False)
     consented_at = models.DateTimeField(null=True, blank=True)
@@ -21,11 +22,11 @@ class ParticipantSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return str(self.session_uuid)
-
+        return f"{self.user.username if self.user else 'Anon'} - {self.session_uuid}"
 
 class Movie(models.Model):
     imdb_id = models.CharField(max_length=16, unique=True)
+    target_groups = models.ManyToManyField(Group, related_name='targeted_movies', blank=True)
     title = models.CharField(max_length=200)
     year = models.PositiveIntegerField()
     genre = models.CharField(max_length=120)
@@ -103,6 +104,7 @@ class MovieReviewResponse(models.Model):
 
 class NewsArticle(models.Model):
     slug = models.SlugField(unique=True)
+    target_groups = models.ManyToManyField(Group, related_name='targeted_news', blank=True)
     headline = models.CharField(max_length=255)
     source = models.CharField(max_length=120)
     summary = models.TextField()
@@ -141,6 +143,7 @@ class NewsArticleResponse(models.Model):
 
 class NetworkDiagram(models.Model):
     slug = models.SlugField(unique=True)
+    target_groups = models.ManyToManyField(Group, related_name='targeted_diagrams', blank=True)
     title = models.CharField(max_length=255)
     context = models.TextField()
     image_url = models.URLField(blank=True)

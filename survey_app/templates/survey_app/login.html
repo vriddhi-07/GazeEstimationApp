@@ -1,0 +1,57 @@
+{% extends "survey_app/base.html" %}
+
+{% block content %}
+<section class="card intake-card login-card">
+  <h1>Participant Login</h1>
+  <p class="lead">
+    Please enter your assigned participant ID and credentials to access the study.
+  </p>
+
+  <form method="post" class="intake-form">
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+      <div class="error-message alert-danger">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label for="id_username">Participant Username / ID:</label>
+      <input 
+        type="text" 
+        name="username" 
+        id="id_username" 
+        class="form-control" 
+        required 
+        autofocus
+        placeholder="e.g., 1"
+      >
+      {% if form.username.errors %}
+        <span class="field-error">{{ form.username.errors|join:", " }}</span>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_password">Password:</label>
+      <input 
+        type="password" 
+        name="password" 
+        id="id_password" 
+        class="form-control" 
+        required
+        placeholder="Enter password"
+      >
+      {% if form.password.errors %}
+        <span class="field-error">{{ form.password.errors|join:", " }}</span>
+      {% endif %}
+    </div>
+
+    <div class="intake-actions">
+      <button type="submit" class="btn">Login & Continue</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

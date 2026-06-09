@@ -1,11 +1,11 @@
 NETWORK_DIAGRAMS = [
+    # --- SET 1 ---
     {
         "slug": "marketing-technology-network",
+        "set_group": 1,
         "title": "Task 3A: Network Diagram 1",
         "type": "network",
-        "context": (
-            "This diagram shows different social-media actions between a person, a group, a post, and a comment."
-        ),
+        "context": "This diagram shows different social-media actions between a person, a group, a post, and a comment.",
         "image_url": "https://datawalk.com/wp-content/uploads/2021/05/Network-Graph-Example-1024x787.png.webp",
         "image_alt": "A network graph example with colored nodes and connecting links.",
         "image_source_label": "Provided network image 1",
@@ -14,7 +14,6 @@ NETWORK_DIAGRAMS = [
         "image_position": "center center",
         "image_aspect_ratio": "5 / 3",
         "image_scale": "100%",
-        
         "nodes": [],
         "edges": [],
         "question_one": "According to the diagram, who is shown as the witness to the murder?",
@@ -24,11 +23,10 @@ NETWORK_DIAGRAMS = [
     },
     {
         "slug": "social-network-example",
+        "set_group": 1,
         "title": "Task 3B: Network Diagram 2",
         "type": "network",
-        "context": (
-            "This network image uses circles and lines to show direct relationships. Compare central nodes with outer ones."
-        ),
+        "context": "This network image uses circles and lines to show direct relationships. Compare central nodes with outer ones.",
         "image_url": "https://cdn.geekwire.com/wp-content/uploads/2018/05/What-is-graph-database-social-network-diagram.a6601377b99c03ede1f2e5cf078c01467fb6890a.png",
         "image_alt": "A social network diagram with many nodes and connecting lines.",
         "image_source_label": "Provided network image 2",
@@ -45,11 +43,10 @@ NETWORK_DIAGRAMS = [
     },
     {
         "slug": "social-network-photo-diagram",
+        "set_group": 1,
         "title": "Task 3C: Network Diagram 3",
         "type": "network",
-        "context": (
-            "This image shows a social network with clearly visible nodes and links. Focus on direct relationships and peripheral nodes."
-        ),
+        "context": "This image shows a social network with clearly visible nodes and links. Focus on direct relationships and peripheral nodes.",
         "image_url": "https://www.mbaskool.com/2019_images/stories/apr_images/social-network.jpg",
         "image_alt": "A simplified social network diagram with connected circles.",
         "image_source_label": "Provided network image 3",
@@ -65,13 +62,14 @@ NETWORK_DIAGRAMS = [
         "question_two": "Which of the following is shown as one of the direct benefits or outcomes linked to the center?",
         "question_two_options": ["Brand Exposure", "Medical Diagnosis", "Political Stability", "Weather Forecasting"],
     },
+
+    # --- SET 2 ---
     {
         "slug": "environment-word-cloud",
+        "set_group": 2,
         "title": "Task 3D: Word Cloud 1",
         "type": "wordcloud",
-        "context": (
-            "Use the largest words to identify the main theme of the image."
-        ),
+        "context": "Use the largest words to identify the main theme of the image.",
         "image_url": "https://as2.ftcdn.net/v2/jpg/04/21/53/99/1000_F_421539998_nMLPV86Aro7imZFGyYHqeNrPDJRo3p7h.jpg",
         "image_alt": "A simple word cloud with environment and nature related terms.",
         "image_source_label": "Provided word cloud 1",
@@ -88,11 +86,10 @@ NETWORK_DIAGRAMS = [
     },
     {
         "slug": "health-word-cloud",
+        "set_group": 2,
         "title": "Task 3E: Word Cloud 2",
         "type": "wordcloud",
-        "context": (
-            "Look at the biggest words first, then use the smaller words to confirm the topic."
-        ),
+        "context": "Look at the biggest words first, then use the smaller words to confirm the topic.",
         "image_url": "https://as2.ftcdn.net/v2/jpg/03/37/85/73/1000_F_337857354_XrVGNyV3axqeB6JjX4f8dgT1gSt5ZWZw.jpg",
         "image_alt": "A simple health themed word cloud.",
         "image_source_label": "Provided word cloud 2",
@@ -109,11 +106,10 @@ NETWORK_DIAGRAMS = [
     },
     {
         "slug": "business-word-cloud",
+        "set_group": 2,
         "title": "Task 3F: Word Cloud 3",
         "type": "wordcloud",
-        "context": (
-            "Focus on the most prominent words to identify the main subject area."
-        ),
+        "context": "Focus on the most prominent words to identify the main subject area.",
         "image_url": "https://as1.ftcdn.net/v2/jpg/02/71/85/78/1000_F_271857811_4atA14pwr3AhOY54T9qUcYs1HytJBUI5.jpg",
         "image_alt": "A simple business themed word cloud.",
         "image_source_label": "Provided word cloud 3",
@@ -127,5 +123,67 @@ NETWORK_DIAGRAMS = [
         "question_one_options": ["College", "Science", "School", "University"],
         "question_two": "How many of these four words appear in the cloud — Library, Paper, Wisdom, Exam?",
         "question_two_options": ["One", "Three", "Two", "All four"],
+    },
+
+    # --- SET 3 ---
+    {
+        "slug": "cybersecurity-word-cloud",
+        "set_group": 3,
+        "title": "Task 3G: Word Cloud 4",
+        "type": "wordcloud",
+        "context": "Identify the central theme by looking at the largest highlighted words in the diagram.",
+        "image_url": "https://as1.ftcdn.net/v2/jpg/01/77/80/47/1000_F_177804791_gB39g1j6qR2Uv0Kx9f743n9jH4DkY6x2.jpg",
+        "image_alt": "A simple cybersecurity themed word cloud.",
+        "image_source_label": "Provided word cloud 4",
+        "image_source_url": "https://as1.ftcdn.net/v2/jpg/01/77/80/47/1000_F_177804791_gB39g1j6qR2Uv0Kx9f743n9jH4DkY6x2.jpg",
+        "image_fit": "contain",
+        "image_position": "left center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "What major concept stands out most prominently?",
+        "question_one_options": ["Security", "Software", "Internet", "Hardware"],
+        "question_two": "Which threat vector is explicitly mentioned in the word cloud?",
+        "question_two_options": ["Malware", "Phishing", "Tornadoes", "Traffic"],
+    },
+    {
+        "slug": "data-science-word-cloud",
+        "set_group": 3,
+        "title": "Task 3H: Word Cloud 5",
+        "type": "wordcloud",
+        "context": "Scan the cloud for terms related to data manipulation and modeling.",
+        "image_url": "https://as2.ftcdn.net/v2/jpg/01/87/00/22/1000_F_187002272_QG4x9f6Xf8hJ7V8t8j9Tj8H9yH9h9h9.jpg",
+        "image_alt": "A data science themed word cloud.",
+        "image_source_label": "Provided word cloud 5",
+        "image_source_url": "https://as2.ftcdn.net/v2/jpg/01/87/00/22/1000_F_187002272_QG4x9f6Xf8hJ7V8t8j9Tj8H9yH9h9h9.jpg",
+        "image_fit": "contain",
+        "image_position": "left center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "Which term relates most directly to predictive modeling?",
+        "question_one_options": ["Machine Learning", "Database", "Spreadsheet", "Cloud"],
+        "question_two": "Are there any programming languages explicitly shown?",
+        "question_two_options": ["Python", "Java", "C++", "None"],
+    },
+    {
+        "slug": "finance-network-diagram",
+        "set_group": 3,
+        "title": "Task 3I: Network Diagram 4",
+        "type": "network",
+        "context": "Examine the flows and connections between different financial entities in the diagram.",
+        "image_url": "https://datawalk.com/wp-content/uploads/2021/05/Network-Graph-Example-1024x787.png.webp",
+        "image_alt": "A network graph showing financial transactions.",
+        "image_source_label": "Provided network image 4",
+        "image_source_url": "https://datawalk.com/wp-content/uploads/2021/05/Network-Graph-Example-1024x787.png.webp",
+        "image_fit": "contain",
+        "image_position": "center center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "What is the central node facilitating these connections?",
+        "question_one_options": ["Central Bank", "Investment Firm", "Retail Customer", "Clearing House"],
+        "question_two": "What type of links connect the outer nodes to the center?",
+        "question_two_options": ["Transactions", "Friendships", "Emails", "Physical Roads"],
     },
 ]

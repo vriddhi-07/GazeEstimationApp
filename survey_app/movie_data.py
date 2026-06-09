@@ -9,8 +9,10 @@ SST_PATH = BASE_DIR / "data" / "stanford_sentiment_treebank"
 MAX_WORDS = 150
 
 MOVIE_METADATA = [
+    # --- SET 1 (Users 1, 2, 3, 4) ---
     {
         "imdb_id": "tt0111161",
+        "set_group": 1,
         "title": "The Shawshank Redemption",
         "year": 1994,
         "genre": "Drama",
@@ -19,6 +21,7 @@ MOVIE_METADATA = [
     },
     {
         "imdb_id": "tt0068646",
+        "set_group": 1,
         "title": "The Godfather",
         "year": 1972,
         "genre": "Crime, Drama",
@@ -27,6 +30,7 @@ MOVIE_METADATA = [
     },
     {
         "imdb_id": "tt0468569",
+        "set_group": 1,
         "title": "The Dark Knight",
         "year": 2008,
         "genre": "Action, Crime, Drama",
@@ -35,6 +39,7 @@ MOVIE_METADATA = [
     },
     {
         "imdb_id": "tt0109830",
+        "set_group": 1,
         "title": "Forrest Gump",
         "year": 1994,
         "genre": "Drama, Romance",
@@ -43,20 +48,107 @@ MOVIE_METADATA = [
     },
     {
         "imdb_id": "tt0133093",
+        "set_group": 1,
         "title": "The Matrix",
         "year": 1999,
         "genre": "Action, Sci-Fi",
         "poster_url": "/static/survey_app/posters/the_matrix.svg",
         "description": "A hacker discovers reality is a simulation and joins a rebellion against machine control.",
     },
+
+    # --- SET 2 (Users 5, 6, 7, 8) ---
     {
         "imdb_id": "tt0167260",
+        "set_group": 2,
         "title": "The Lord of the Rings: The Return of the King",
         "year": 2003,
         "genre": "Adventure, Drama, Fantasy",
         "poster_url": "/static/survey_app/posters/lotr_return_of_the_king.svg",
         "description": "The final battle for Middle-earth unfolds as friends race to destroy the ring.",
     },
+    {
+        "imdb_id": "tt1375666",
+        "set_group": 2,
+        "title": "Inception",
+        "year": 2010,
+        "genre": "Action, Adventure, Sci-Fi",
+        "poster_url": "/static/survey_app/posters/inception.svg",
+        "description": "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea.",
+    },
+    {
+        "imdb_id": "tt0110912",
+        "set_group": 2,
+        "title": "Pulp Fiction",
+        "year": 1994,
+        "genre": "Crime, Drama",
+        "poster_url": "/static/survey_app/posters/pulp_fiction.svg",
+        "description": "The lives of two mob hitmen, a boxer, a gangster, and his wife intertwine in four tales of violence and redemption.",
+    },
+    {
+        "imdb_id": "tt0137523",
+        "set_group": 2,
+        "title": "Fight Club",
+        "year": 1999,
+        "genre": "Drama",
+        "poster_url": "/static/survey_app/posters/fight_club.svg",
+        "description": "An insomniac office worker and a devil-may-care soap maker form an underground fight club that evolves into much more.",
+    },
+    {
+        "imdb_id": "tt0816692",
+        "set_group": 2,
+        "title": "Interstellar",
+        "year": 2014,
+        "genre": "Adventure, Drama, Sci-Fi",
+        "poster_url": "/static/survey_app/posters/interstellar.svg",
+        "description": "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+    },
+
+    # --- SET 3 (Users 9, 10, 11, 12) ---
+    {
+        "imdb_id": "tt0099685",
+        "set_group": 3,
+        "title": "Goodfellas",
+        "year": 1990,
+        "genre": "Biography, Crime, Drama",
+        "poster_url": "/static/survey_app/posters/goodfellas.svg",
+        "description": "The story of Henry Hill and his life in the mob, covering his relationship with his wife Karen Hill and his mob partners.",
+    },
+    {
+        "imdb_id": "tt6751668",
+        "set_group": 3,
+        "title": "Parasite",
+        "year": 2019,
+        "genre": "Drama, Thriller",
+        "poster_url": "/static/survey_app/posters/parasite.svg",
+        "description": "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
+    },
+    {
+        "imdb_id": "tt0172495",
+        "set_group": 3,
+        "title": "Gladiator",
+        "year": 2000,
+        "genre": "Action, Adventure, Drama",
+        "poster_url": "/static/survey_app/posters/gladiator.svg",
+        "description": "A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.",
+    },
+    {
+        "imdb_id": "tt0102926",
+        "set_group": 3,
+        "title": "The Silence of the Lambs",
+        "year": 1991,
+        "genre": "Crime, Drama, Thriller",
+        "poster_url": "/static/survey_app/posters/the_silence_of_the_lambs.svg",
+        "description": "A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer.",
+    },
+    {
+        "imdb_id": "tt0482571",
+        "set_group": 3,
+        "title": "The Prestige",
+        "year": 2006,
+        "genre": "Drama, Mystery, Sci-Fi",
+        "poster_url": "/static/survey_app/posters/the_prestige.svg",
+        "description": "After a tragic accident, two stage magicians in 1890s London engage in a battle to create the ultimate illusion.",
+    }
 ]
 
 
@@ -120,7 +212,9 @@ def load_review_pool() -> dict[str, list[str]]:
             if text not in pools[sentiment]:
                 pools[sentiment].append(text)
 
-            if all(len(values) >= 8 for values in pools.values()):
+            # INCREASED DATA REQUIREMENTS: We now need a lot more reviews for 15 movies.
+            # Raised from 8 to 50 minimum reviews per sentiment type.
+            if all(len(values) >= 50 for values in pools.values()):
                 return pools
 
     return pools
@@ -128,14 +222,16 @@ def load_review_pool() -> dict[str, list[str]]:
 
 def build_movies() -> list[dict]:
     review_pool = load_review_pool()
+    
+    # Expanded to exactly 15 plans to match the 15 movies
     sentiment_plan = [
         ("positive", "positive"),
         ("positive", "neutral"),
         ("positive", "negative"),
         ("neutral", "positive"),
         ("negative", "positive"),
-        ("positive", "neutral"),
-    ]
+    ] * 3 
+    
     indices = {"positive": 0, "neutral": 0, "negative": 0}
 
     movies = []

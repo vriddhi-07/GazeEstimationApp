@@ -4,6 +4,9 @@ import subprocess
 import threading
 import time
 
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -39,14 +42,7 @@ ACTIVE_ARTICLE_SESSION_KEY = "active_news_article"
 
 
 def get_or_create_participant(request: HttpRequest) -> ParticipantSession:
-    participant_id = request.session.get("participant_id")
-    if participant_id:
-        participant = ParticipantSession.objects.filter(id=participant_id).first()
-        if participant:
-            return participant
-
-    participant = ParticipantSession.objects.create()
-    request.session["participant_id"] = participant.id
+    participant, created = ParticipantSession.objects.get_or_create(user=request.user)
     return participant
 
 
@@ -226,6 +222,11 @@ def seed_movie_data() -> None:
                 "description": item["description"],
             },
         )
+        
+        group_name = f"Set {item.get('set_group', 1)}"
+        group, _ = Group.objects.get_or_create(name=group_name)
+        movie.target_groups.add(group)
+        
         reviews = item["reviews"]
         movie.reviews.all().delete()
         Review.objects.bulk_create(
@@ -246,7 +247,7 @@ def seed_news_data() -> None:
     NewsArticle.objects.exclude(slug__in=active_slugs).delete()
 
     for item in NEWS_ARTICLES:
-        NewsArticle.objects.update_or_create(
+        article, _ = NewsArticle.objects.update_or_create(
             slug=item["slug"],
             defaults={
                 "headline": item["headline"],
@@ -256,6 +257,11 @@ def seed_news_data() -> None:
                 "is_fake": item.get("is_fake", False),
             },
         )
+        
+        # Link the article to the correct Cohort Group
+        group_name = f"Set {item.get('set_group', 1)}"
+        group, _ = Group.objects.get_or_create(name=group_name)
+        article.target_groups.add(group)
 
 
 def seed_network_data() -> None:
@@ -263,7 +269,7 @@ def seed_network_data() -> None:
     NetworkDiagram.objects.exclude(slug__in=active_slugs).delete()
 
     for item in NETWORK_DIAGRAMS:
-        NetworkDiagram.objects.update_or_create(
+        diagram, _ = NetworkDiagram.objects.update_or_create(
             slug=item["slug"],
             defaults={
                 "title": item["title"],
@@ -280,6 +286,11 @@ def seed_network_data() -> None:
                 "question_two_options": item["question_two_options"],
             },
         )
+        
+        # Link the diagram to the correct Cohort Group
+        group_name = f"Set {item.get('set_group', 1)}"
+        group, _ = Group.objects.get_or_create(name=group_name)
+        diagram.target_groups.add(group)
 
 
 def get_network_display_hints(slug: str) -> dict[str, str]:
@@ -322,17 +333,28 @@ def build_network_edges(diagram: NetworkDiagram) -> list[dict[str, int | str]]:
     return rendered_edges
 
 
-@require_GET
-def welcome_view(request: HttpRequest) -> HttpResponse:
-    participant = ParticipantSession.objects.create()
-    request.session["participant_id"] = participant.id
-    request.session[CONSENT_RUN_KEY] = False
-    request.session.pop(ACTIVE_REVIEW_SESSION_KEY, None)
-    request.session.pop(ACTIVE_ARTICLE_SESSION_KEY, None)
+@require_http_methods(["GET", "POST"])
+def login_view(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            
+            # Fetch the participant AND save the ID to the session
+            participant = get_or_create_participant(request)
+            request.session["participant_id"] = participant.id
+            request.session[CONSENT_RUN_KEY] = False
+            
+            return redirect("survey_app:consent")
+    else:
+        form = AuthenticationForm()
+
     return render(
         request,
-        "survey_app/welcome.html",
+        "survey_app/login.html", 
         {
+            "form": form,
             "record_webcam": False,
             "reset_capture_session": True,
             "load_survey_js": False,
@@ -505,6 +527,7 @@ def media_preferences_view(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 @require_GET
 def carousel_view(request: HttpRequest) -> HttpResponse:
     participant = get_or_create_participant(request)
@@ -514,7 +537,13 @@ def carousel_view(request: HttpRequest) -> HttpResponse:
 
     seed_movie_data()
     reviewed_movie_ids = participant.movie_review_responses.values_list("movie_id", flat=True)
-    movies = Movie.objects.prefetch_related("reviews").exclude(id__in=reviewed_movie_ids)
+    
+    # Filter by the user's groups
+    user_groups = request.user.groups.all()
+    movies = Movie.objects.prefetch_related("reviews").filter(
+        target_groups__in=user_groups
+    ).exclude(id__in=reviewed_movie_ids).distinct()
+    
     progress = get_review_progress(participant)
     return render(
         request,
@@ -526,7 +555,7 @@ def carousel_view(request: HttpRequest) -> HttpResponse:
         },
     )
 
-
+@login_required
 @require_GET
 def news_carousel_view(request: HttpRequest) -> HttpResponse:
     participant = get_or_create_participant(request)
@@ -536,13 +565,47 @@ def news_carousel_view(request: HttpRequest) -> HttpResponse:
 
     seed_news_data()
     responded_article_ids = participant.news_article_responses.values_list("article_id", flat=True)
-    articles = NewsArticle.objects.exclude(id__in=responded_article_ids)
+    
+    user_groups = request.user.groups.all()
+    articles = NewsArticle.objects.filter(
+        target_groups__in=user_groups
+    ).exclude(id__in=responded_article_ids).distinct()
+    
     progress = get_news_progress(participant)
     return render(
         request,
         "survey_app/news_carousel.html",
         {
             "articles": articles,
+            "progress": progress,
+            "record_webcam": True,
+        },
+    )
+
+@login_required
+@require_GET
+def network_carousel_view(request: HttpRequest) -> HttpResponse:
+    participant = get_or_create_participant(request)
+    onboarding_redirect = get_onboarding_redirect(participant, request)
+    if onboarding_redirect:
+        return redirect(onboarding_redirect)
+    if not get_news_progress(participant)["minimum_met"]:
+        return redirect("survey_app:news_carousel")
+
+    seed_network_data()
+    responded_diagram_ids = participant.network_diagram_responses.values_list("diagram_id", flat=True)
+    
+    user_groups = request.user.groups.all()
+    diagrams = NetworkDiagram.objects.filter(
+        target_groups__in=user_groups
+    ).exclude(id__in=responded_diagram_ids).distinct()
+    
+    progress = get_network_progress(participant)
+    return render(
+        request,
+        "survey_app/network_carousel.html",
+        {
+            "diagrams": diagrams,
             "progress": progress,
             "record_webcam": True,
         },
@@ -724,30 +787,6 @@ def news_questions_view(request: HttpRequest, article_id: int) -> HttpResponse:
         {
             "article": article,
             "article_body": article_body,
-            "record_webcam": True,
-        },
-    )
-
-
-@require_GET
-def network_carousel_view(request: HttpRequest) -> HttpResponse:
-    participant = get_or_create_participant(request)
-    onboarding_redirect = get_onboarding_redirect(participant, request)
-    if onboarding_redirect:
-        return redirect(onboarding_redirect)
-    if not get_news_progress(participant)["minimum_met"]:
-        return redirect("survey_app:news_carousel")
-
-    seed_network_data()
-    responded_diagram_ids = participant.network_diagram_responses.values_list("diagram_id", flat=True)
-    diagrams = NetworkDiagram.objects.exclude(id__in=responded_diagram_ids)
-    progress = get_network_progress(participant)
-    return render(
-        request,
-        "survey_app/network_carousel.html",
-        {
-            "diagrams": diagrams,
-            "progress": progress,
             "record_webcam": True,
         },
     )
