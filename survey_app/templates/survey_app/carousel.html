@@ -5,16 +5,15 @@
   <div>
     <h1>Task 1: Choose a Movie</h1>
     {% if progress.minimum_met %}
-      <p>You have completed the required 3 movie reviews. You can review another movie one at a time or move to the next task.</p>
       <div class="carousel-actions">
-        <a class="btn btn-secondary" href="{% url 'survey_app:next_task' %}">Move to the next task</a>
+        <a class="btn" href="{% url 'survey_app:paas_evaluation' 1 %}">Continue to next task</a>
       </div>
     {% else %}
-      <p>Review at least 3 different movies. After each review, choose the next movie from the carousel.</p>
+      <p>Review 3 different movies. After each review, choose the next movie from the carousel.</p>
       <p class="progress-note">{{ progress.remaining_required }} required review{{ progress.remaining_required|pluralize }} remaining.</p>
     {% endif %}
 
-    {% if movies %}
+    {% if movies and not progress.minimum_met %}
       <div class="carousel-shell">
         <div class="carousel-viewport" id="carouselViewport">
           <div class="carousel" id="movieCarousel">
@@ -38,11 +37,11 @@
           </div>
         </div>
       </div>
-    {% else %}
+    {% elif not movies and not progress.minimum_met %}
       <div class="empty-state card">
         <h2>No more movies left to review</h2>
         <p>You have already reviewed every movie in the carousel.</p>
-        <a class="btn" href="{% url 'survey_app:next_task' %}">Move to the next task</a>
+        <a class="btn" href="{% url 'survey_app:next_task' %}">Continue</a>
       </div>
     {% endif %}
   </div>

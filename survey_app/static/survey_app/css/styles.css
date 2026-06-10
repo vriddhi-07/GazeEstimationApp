@@ -816,9 +816,6 @@ h1 { margin-top: 0; }
   overflow: hidden;
   min-height: 0;
   width: 100%;
-  height: min(42vh, 380px);
-  max-height: min(42vh, 380px);
-  aspect-ratio: var(--image-aspect-ratio, 4 / 3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -844,37 +841,29 @@ h1 { margin-top: 0; }
 }
 
 .split-network-form-marketing-technology-network {
-  grid-template-columns: minmax(0, 42%) minmax(600px, 58%);
+  grid-template-columns: 1fr 1fr;
 }
 
 .split-network-form-environment-word-cloud {
-  grid-template-columns: minmax(0, 42%) minmax(600px, 58%);
+  grid-template-columns: 1fr 1fr;
 }
 
 .split-network-form-health-word-cloud {
-  grid-template-columns: minmax(0, 42%) minmax(600px, 58%);
+  grid-template-columns: 1fr 1fr;
 }
 
 .split-network-form-business-word-cloud {
-  grid-template-columns: minmax(0, 42%) minmax(600px, 58%);
-}
-
-.split-network-form-marketing-technology-network .network-diagram-shell,
-.split-network-form-environment-word-cloud .network-diagram-shell,
-.split-network-form-health-word-cloud .network-diagram-shell,
-.split-network-form-business-word-cloud .network-diagram-shell {
-  height: min(36vh, 330px);
-  max-height: min(36vh, 330px);
+  grid-template-columns: 1fr 1fr;
 }
 
 .split-network-form-marketing-technology-network .network-reference-image,
 .split-network-form-environment-word-cloud .network-reference-image,
 .split-network-form-health-word-cloud .network-reference-image,
 .split-network-form-business-word-cloud .network-reference-image {
-  width: 82%;
-  height: 82%;
-  max-width: 82%;
-  max-height: 82%;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .network-question-form .btn {
@@ -1153,87 +1142,113 @@ h1 { margin-top: 0; }
   }
 }
 /* =========================================
-   FINAL LAYOUT FIXES
+   TASK 3 — FINAL LAYOUT (no scrollbar)
 ========================================= */
 
-/* 🔥 Balanced left-right layout */
+/* Full-viewport grid: left = image panel, right = questions panel, 50/50 */
 .question-form.split-network-form {
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  height: calc(100dvh - 11rem);
+  overflow: hidden;
 }
 
-/* 🔥 Fix image container size */
-.network-question-form .network-diagram-shell {
-  height: 320px;
-  max-height: 320px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 🔥 Prevent overflow on right side */
-.network-question-form .network-questions-panel {
-  overflow-y: auto;
-}
-
-/* =========================================
-   NETWORK DIAGRAMS (3B, 3C)
-========================================= */
-
-.network-layout .network-diagram-shell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.network-layout .network-reference-image {
-  max-width: 85%;
-  max-height: 85%;
-  object-fit: contain;
-}
-
-/* =========================================
-   WORD CLOUDS (3D, 3E, 3F)
-========================================= */
-
-.wordcloud-layout {
+/* Left panel: fill all vertical space, no scroll */
+.network-question-form .network-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
-.wordcloud-layout .network-diagram-shell {
-  height: 260px;
-  max-height: 260px;
+/* Image shell: grows to fill whatever the panel header leaves behind */
+.network-question-form .network-diagram-shell {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
-.wordcloud-layout .network-reference-image {
+/* Image itself: fill the shell completely */
+.network-question-form .network-reference-image {
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  object-position: center;
+  display: block;
 }
 
-/* =========================================
-   TEXT SIZE OPTIMIZATION
-========================================= */
+/* Right panel: fill height, no scroll, flex column so each question gets half */
+.network-question-form .network-questions-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  gap: 0.6rem;
+  padding: 1rem;
+}
 
+/* Each question block takes exactly half the available space */
+.network-question-form .question-block.large {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* Question text: bigger and clear */
 .network-question-form .question-block.large h2 {
-  font-size: 1rem;
+  font-size: clamp(1rem, 1.3vw, 1.4rem);
+  line-height: 1.22;
+  margin-bottom: 0.45rem;
+  flex-shrink: 0;
 }
 
+/* Option labels: bigger to match */
 .network-question-form .option-row.large label {
-  font-size: 0.9rem;
+  font-size: clamp(0.92rem, 1.05vw, 1.1rem);
+  line-height: 1.25;
+  padding: 0.5rem 0.65rem;
 }
 
-/* =========================================
-   MOBILE FIX
-========================================= */
+/* Options container fills remaining space in question block */
+.network-question-form .question-block.large .option-row {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
 
+/* Submit button: fixed at bottom, no flex growth */
+.network-question-form .btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0.4rem;
+}
+
+/* Mobile: stack vertically */
 @media (max-width: 1100px) {
   .question-form.split-network-form {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .network-question-form .network-diagram-shell {
+    height: 280px;
+    flex: none;
+  }
+  .network-question-form .network-questions-panel {
+    height: auto;
+    overflow: visible;
+  }
+  .network-question-form .question-block.large {
+    flex: none;
   }
 }

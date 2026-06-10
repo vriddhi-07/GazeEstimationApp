@@ -5,6 +5,7 @@ import threading
 import time
 
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import Group
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -565,22 +566,19 @@ def news_carousel_view(request: HttpRequest) -> HttpResponse:
 
     seed_news_data()
     responded_article_ids = participant.news_article_responses.values_list("article_id", flat=True)
-    
+
     user_groups = request.user.groups.all()
-    articles = NewsArticle.objects.filter(
+    next_article = NewsArticle.objects.filter(
         target_groups__in=user_groups
-    ).exclude(id__in=responded_article_ids).distinct()
-    
+    ).exclude(id__in=responded_article_ids).distinct().first()
+
+    if next_article:
+        return redirect("survey_app:news_detail", article_id=next_article.id)
+
     progress = get_news_progress(participant)
-    return render(
-        request,
-        "survey_app/news_carousel.html",
-        {
-            "articles": articles,
-            "progress": progress,
-            "record_webcam": True,
-        },
-    )
+    if progress["minimum_met"]:
+        return redirect("survey_app:paas_evaluation", task_number=2)
+    return redirect("survey_app:next_task")
 
 @login_required
 @require_GET
@@ -594,22 +592,19 @@ def network_carousel_view(request: HttpRequest) -> HttpResponse:
 
     seed_network_data()
     responded_diagram_ids = participant.network_diagram_responses.values_list("diagram_id", flat=True)
-    
+
     user_groups = request.user.groups.all()
-    diagrams = NetworkDiagram.objects.filter(
+    next_diagram = NetworkDiagram.objects.filter(
         target_groups__in=user_groups
-    ).exclude(id__in=responded_diagram_ids).distinct()
-    
+    ).exclude(id__in=responded_diagram_ids).distinct().first()
+
+    if next_diagram:
+        return redirect("survey_app:network_questions", diagram_id=next_diagram.id)
+
     progress = get_network_progress(participant)
-    return render(
-        request,
-        "survey_app/network_carousel.html",
-        {
-            "diagrams": diagrams,
-            "progress": progress,
-            "record_webcam": True,
-        },
-    )
+    if progress["minimum_met"]:
+        return redirect("survey_app:paas_evaluation", task_number=3)
+    return redirect("survey_app:next_task")
 
 
 @require_GET
@@ -691,14 +686,9 @@ def movie_questions_view(request: HttpRequest, movie_id: int) -> HttpResponse:
         )
         request.session.pop(ACTIVE_REVIEW_SESSION_KEY, None)
         progress = get_review_progress(participant)
-        return render(
-            request,
-            "survey_app/review_submitted.html",
-            {
-                "minimum_met": progress["minimum_met"],
-                "record_webcam": True,
-            },
-        )
+        if progress["minimum_met"]:
+            return redirect("survey_app:paas_evaluation", task_number=1)
+        return redirect("survey_app:carousel")
 
     return render(
         request,
@@ -768,18 +758,18 @@ def news_questions_view(request: HttpRequest, article_id: int) -> HttpResponse:
         )
         request.session.pop(ACTIVE_ARTICLE_SESSION_KEY, None)
         progress = get_news_progress(participant)
-        remaining_articles = NewsArticle.objects.exclude(
+        if progress["minimum_met"]:
+            return redirect("survey_app:paas_evaluation", task_number=2)
+        # Auto-pick next article for the user
+        user_groups = request.user.groups.all()
+        next_article = NewsArticle.objects.filter(
+            target_groups__in=user_groups
+        ).exclude(
             id__in=participant.news_article_responses.values_list("article_id", flat=True)
-        ).exists()
-        return render(
-            request,
-            "survey_app/news_submitted.html",
-            {
-                "has_more_articles": remaining_articles,
-                "minimum_met": progress["minimum_met"],
-                "record_webcam": True,
-            },
-        )
+        ).distinct().first()
+        if next_article:
+            return redirect("survey_app:news_detail", article_id=next_article.id)
+        return redirect("survey_app:paas_evaluation", task_number=2)
 
     return render(
         request,
@@ -839,18 +829,18 @@ def network_questions_view(request: HttpRequest, diagram_id: int) -> HttpRespons
             answer_two=answer_two,
         )
         progress = get_network_progress(participant)
-        remaining_diagrams = NetworkDiagram.objects.exclude(
+        if progress["minimum_met"]:
+            return redirect("survey_app:paas_evaluation", task_number=3)
+        # Auto-pick next diagram for the user
+        user_groups = request.user.groups.all()
+        next_diagram = NetworkDiagram.objects.filter(
+            target_groups__in=user_groups
+        ).exclude(
             id__in=participant.network_diagram_responses.values_list("diagram_id", flat=True)
-        ).exists()
-        return render(
-            request,
-            "survey_app/network_submitted.html",
-            {
-                "has_more_diagrams": remaining_diagrams,
-                "minimum_met": progress["minimum_met"],
-                "record_webcam": True,
-            },
-        )
+        ).distinct().first()
+        if next_diagram:
+            return redirect("survey_app:network_questions", diagram_id=next_diagram.id)
+        return redirect("survey_app:paas_evaluation", task_number=3)
 
     return render(
         request,
@@ -951,21 +941,37 @@ def next_task_view(request: HttpRequest) -> HttpResponse:
     onboarding_redirect = get_onboarding_redirect(participant, request)
     if onboarding_redirect:
         return redirect(onboarding_redirect)
-        
+
     # Check Task 1 (Movies)
     if not get_review_progress(participant)["minimum_met"]:
         return redirect("survey_app:carousel")
     if not participant.paas_responses.filter(task_number=1).exists():
         return redirect("survey_app:paas_evaluation", task_number=1)
 
-    # Check Task 2 (News)
+    # After PAAS 1: auto-start Task 2 (News) — pick first article directly
     if not get_news_progress(participant)["minimum_met"]:
+        seed_news_data()
+        responded_article_ids = participant.news_article_responses.values_list("article_id", flat=True)
+        user_groups = request.user.groups.all()
+        next_article = NewsArticle.objects.filter(
+            target_groups__in=user_groups
+        ).exclude(id__in=responded_article_ids).distinct().first()
+        if next_article:
+            return redirect("survey_app:news_detail", article_id=next_article.id)
         return redirect("survey_app:news_carousel")
     if not participant.paas_responses.filter(task_number=2).exists():
         return redirect("survey_app:paas_evaluation", task_number=2)
 
-    # Check Task 3 (Networks)
+    # After PAAS 2: auto-start Task 3 (Networks/Word Cloud) — pick first diagram directly
     if not get_network_progress(participant)["minimum_met"]:
+        seed_network_data()
+        responded_diagram_ids = participant.network_diagram_responses.values_list("diagram_id", flat=True)
+        user_groups = request.user.groups.all()
+        next_diagram = NetworkDiagram.objects.filter(
+            target_groups__in=user_groups
+        ).exclude(id__in=responded_diagram_ids).distinct().first()
+        if next_diagram:
+            return redirect("survey_app:network_questions", diagram_id=next_diagram.id)
         return redirect("survey_app:network_carousel")
     if not participant.paas_responses.filter(task_number=3).exists():
         return redirect("survey_app:paas_evaluation", task_number=3)
