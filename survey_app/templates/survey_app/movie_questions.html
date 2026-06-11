@@ -11,8 +11,8 @@
     {% endif %}
 
     <div class="question-block large">
-      <h2>What is the sentiment of the review that you just read?</h2>
-      <div class="option-row large">
+      <h2 data-re-aoi="q1-movie-question">What is the sentiment of the review that you just read?</h2>
+      <div class="option-row large" data-re-aoi="q1-movie-options">
         <label><input type="radio" name="sentiment_choice" value="positive" {% if selected_sentiment == "positive" %}checked{% endif %}> Positive</label>
         <label><input type="radio" name="sentiment_choice" value="neutral" {% if selected_sentiment == "neutral" %}checked{% endif %}> Neutral</label>
         <label><input type="radio" name="sentiment_choice" value="negative" {% if selected_sentiment == "negative" %}checked{% endif %}> Negative</label>
@@ -20,9 +20,9 @@
     </div>
 
     <div class="question-block large">
-      <h2>Based on the review excerpts, what overall rating do they suggest for this movie?</h2>
+      <h2 data-re-aoi="q2-movie-question">Based on the review excerpts, what overall rating do they suggest for this movie?</h2>
       <input id="ratingChoiceInput" type="hidden" name="rating_choice" value="{{ selected_rating|default:'' }}">
-      <div class="star-rating-wrap large">
+      <div class="star-rating-wrap large" data-re-aoi="q2-movie-options">
         <div
           id="starRating"
           class="star-rating large"

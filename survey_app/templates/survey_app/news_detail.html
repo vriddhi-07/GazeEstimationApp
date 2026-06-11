@@ -6,8 +6,8 @@
 <section class="review-stage">
   <div class="review-focus card">
     <div class="article-reading">
-      <h1 class="article-reading-title">{{ article.headline }}</h1>
-      <p class="review-focus-text article-body-text">{{ article_body }}</p>
+      <h1 class="article-reading-title" data-re-aoi="news-headline-{{ article.id }}">{{ article.headline }}</h1>
+      <p class="review-focus-text article-body-text" data-re-aoi="news-body-{{ article.id }}">{{ article_body }}</p>
     </div>
   </div>
   <a class="btn review-cta" href="{% url 'survey_app:news_questions' article.id %}">Classify Relationship</a>

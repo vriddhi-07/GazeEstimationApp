@@ -15,8 +15,8 @@
     </div>
 
     <div class="question-block large">
-      <h2>How does the article text relate to the headline?</h2>
-      <div class="option-row large stacked-options">
+      <h2 data-re-aoi="q1-news-question">How does the article text relate to the headline?</h2>
+      <div class="option-row large stacked-options" data-re-aoi="q1-news-options">
         <label><input type="radio" name="classification_choice" value="agree" {% if selected_classification == "agree" %}checked{% endif %}> The article body supports the headline's claim.</label>
         <label><input type="radio" name="classification_choice" value="disagree" {% if selected_classification == "disagree" %}checked{% endif %}> The article body contradicts the headline's claim.</label>
         <label><input type="radio" name="classification_choice" value="discuss" {% if selected_classification == "discuss" %}checked{% endif %}> The article body is about the same topic, but does not directly confirm or refute the headline.</label>

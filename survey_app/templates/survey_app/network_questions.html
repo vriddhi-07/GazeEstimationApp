@@ -22,6 +22,7 @@
         {% if diagram.image_url %}
           <img
             src="{{ diagram.image_url }}"
+            data-re-aoi="network-diagram-{{ diagram.slug }}"
             alt="{{ diagram.image_alt|default:diagram.title }}"
             class="network-reference-image"
             style="object-fit: {{ image_fit|default:'contain' }}; object-position: {{ image_position|default:'center center' }}; width: {{ image_scale|default:'100%' }}; height: {{ image_scale|default:'100%' }}; max-width: {{ image_scale|default:'100%' }}; max-height: {{ image_scale|default:'100%' }};"
@@ -45,8 +46,8 @@
 
     <div class="network-questions-panel">
       <div class="question-block large">
-        <h2>{{ diagram.question_one }}</h2>
-        <div class="option-row large stacked-options">
+        <h2 data-re-aoi="q1-network-question">{{ diagram.question_one }}</h2>
+        <div class="option-row large stacked-options" data-re-aoi="q1-network-options">
           {% for option in diagram.question_one_options %}
             <label><input type="radio" name="answer_one" value="{{ option }}" {% if selected_answer_one == option %}checked{% endif %}> {{ option }}</label>
           {% endfor %}
@@ -54,8 +55,8 @@
       </div>
 
       <div class="question-block large">
-        <h2>{{ diagram.question_two }}</h2>
-        <div class="option-row large stacked-options">
+        <h2 data-re-aoi="q2-network-question">{{ diagram.question_two }}</h2>
+        <div class="option-row large stacked-options" data-re-aoi="q2-network-options">
           {% for option in diagram.question_two_options %}
             <label><input type="radio" name="answer_two" value="{{ option }}" {% if selected_answer_two == option %}checked{% endif %}> {{ option }}</label>
           {% endfor %}

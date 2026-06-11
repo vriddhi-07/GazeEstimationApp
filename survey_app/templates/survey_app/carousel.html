@@ -16,10 +16,11 @@
     {% if movies and not progress.minimum_met %}
       <div class="carousel-shell">
         <div class="carousel-viewport" id="carouselViewport">
-          <div class="carousel" id="movieCarousel">
+          <div class="carousel" id="movieCarousel" data-re-aoi="carouselslide">
             {% for movie in movies %}
               <button
                 class="movie-card"
+                data-re-aoi="carousel-movie-{{ movie.id }}"
                 data-movie-id="{{ movie.id }}"
                 data-detail-url="{% url 'survey_app:movie_detail' movie.id %}"
                 data-title="{{ movie.title|escape }}"

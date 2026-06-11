@@ -4,7 +4,7 @@
 <section class="review-stage">
   <p class="stage-kicker">{{ movie.title }} ({{ movie.year }})</p>
   <div class="review-focus card">
-    <p class="review-focus-text">{{ review_text }}</p>
+    <p class="review-focus-text" data-re-aoi="movie-review-text-{{ movie.id }}">{{ review_text }}</p>
   </div>
   <a class="btn review-cta" href="{% url 'survey_app:movie_questions' movie.id %}">Review Questions</a>
 </section>
