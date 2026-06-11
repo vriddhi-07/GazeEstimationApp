@@ -15,12 +15,12 @@
       {% endfor %}
     </div>
     <div class="field">
-      {{ form.profession.label_tag }}
-      {{ form.profession }}
-      {% for error in form.profession.errors %}
-        <div class="error">{{ error }}</div>
-      {% endfor %}
-    </div>
+  {{ form.affiliation.label_tag }}
+  {{ form.affiliation }}
+  {% for error in form.affiliation.errors %}
+    <div class="error">{{ error }}</div>
+  {% endfor %}
+</div>
     <div class="field">
       {{ form.education_level.label_tag }}
       {{ form.education_level }}

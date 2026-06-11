@@ -42,6 +42,13 @@ AGREEMENT_CHOICES = [
     ("strongly_disagree", "Strongly disagree"),
 ]
 
+AFFILIATION_CHOICES = [
+    ("", "Select affiliation"),
+    ("student", "Student"),
+    ("faculty", "Faculty"),
+    ("non-teaching staff", "Non-Teaching Staff"),
+    ("not affiliated", "Not Affiliated"),
+]
 
 class ConsentForm(forms.Form):
     participant_tag = forms.CharField(
@@ -60,7 +67,7 @@ class ConsentForm(forms.Form):
 
 class DemographicForm(forms.Form):
     age = forms.IntegerField(min_value=1, max_value=120, label="Age")
-    profession = forms.CharField(max_length=255, label="Profession")
+    affiliation = forms.ChoiceField(choices=AFFILIATION_CHOICES, label="Affiliation")
     education_level = forms.ChoiceField(
         choices=EDUCATION_LEVEL_CHOICES,
         label="Highest educational qualification",
