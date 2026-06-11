@@ -67,6 +67,8 @@ def get_onboarding_redirect(participant: ParticipantSession, request: HttpReques
         return "survey_app:habits"
     if not participant.reading_habits_completed_at or not request.session.get(CONSENT_RUN_KEY, False):
         return "survey_app:media_preferences"
+    if not participant.expertise_completed_at:          # ← ADD THIS BLOCK
+        return "survey_app:expertise_rating"
     return None
 
 
@@ -526,7 +528,41 @@ def media_preferences_view(request: HttpRequest) -> HttpResponse:
             "load_survey_js": True,
         },
     )
-
+from .forms import ExpertiseRatingForm  # add to your existing forms import line
+ 
+@login_required
+def expertise_rating_view(request: HttpRequest) -> HttpResponse:
+    participant = get_or_create_participant(request)
+ 
+    if not participant.demographics_completed_at:
+        return redirect("survey_app:demographics")
+    if not participant.reading_habits_completed_at:
+        return redirect("survey_app:media_preferences")
+    if participant.expertise_completed_at:
+        return redirect("survey_app:carousel")
+ 
+    if request.method == "POST":
+        form = ExpertiseRatingForm(request.POST)
+        if form.is_valid():
+            participant.expertise_sentiment = form.cleaned_data["expertise_sentiment"]
+            participant.expertise_fakenews = form.cleaned_data["expertise_fakenews"]
+            participant.expertise_visualisation = form.cleaned_data["expertise_visualisation"]
+            participant.expertise_completed_at = timezone.now()
+            participant.save(update_fields=[
+                "expertise_sentiment",
+                "expertise_fakenews",
+                "expertise_visualisation",
+                "expertise_completed_at",
+            ])
+            return redirect("survey_app:carousel")
+    else:
+        form = ExpertiseRatingForm()
+ 
+    return render(request, "survey_app/expertise_rating.html", {
+        "form": form,
+        "record_webcam": False,
+    })
+ 
 
 @login_required
 @require_GET
@@ -1182,3 +1218,4 @@ def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse
             "record_webcam": True,
         }
     )
+

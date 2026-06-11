@@ -1,0 +1,156 @@
+{% extends "survey_app/base.html" %}
+
+{% block content %}
+<section class="card intake-card">
+  <p class="eyebrow">Step 5 of 5</p>
+  <h1>Rate Your Experience</h1>
+  <p class="intake-subtitle">How familiar are you with each of the following? Move the slider to rate yourself from 0 (no expertise) to 5 (proficient).</p>
+
+  <form method="post" class="stack-form expertise-form">
+    {% csrf_token %}
+
+    <div class="expertise-item">
+      <div class="expertise-label-row">
+        <span class="expertise-label">Understanding Sentiment</span>
+        <span class="expertise-value" id="val-sentiment">{{ form.expertise_sentiment.value|default:"0" }}</span>
+      </div>
+      <div class="expertise-slider-wrapper">
+        <input
+          type="range"
+          name="expertise_sentiment"
+          id="id_expertise_sentiment"
+          min="0" max="5" step="1"
+          value="{{ form.expertise_sentiment.value|default:'0' }}"
+          class="expertise-slider"
+          oninput="document.getElementById('val-sentiment').textContent = this.value"
+        >
+        <div class="expertise-tick-labels">
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">0</span>
+            <span class="expertise-tick-desc">No expertise</span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">1</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">2</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">3</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">4</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">5</span>
+            <span class="expertise-tick-desc">Proficient</span>
+          </div>
+        </div>
+      </div>
+      {% for error in form.expertise_sentiment.errors %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="expertise-item">
+      <div class="expertise-label-row">
+        <span class="expertise-label">Fake News Detection</span>
+        <span class="expertise-value" id="val-fakenews">{{ form.expertise_fakenews.value|default:"0" }}</span>
+      </div>
+      <div class="expertise-slider-wrapper">
+        <input
+          type="range"
+          name="expertise_fakenews"
+          id="id_expertise_fakenews"
+          min="0" max="5" step="1"
+          value="{{ form.expertise_fakenews.value|default:'0' }}"
+          class="expertise-slider"
+          oninput="document.getElementById('val-fakenews').textContent = this.value"
+        >
+        <div class="expertise-tick-labels">
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">0</span>
+            <span class="expertise-tick-desc">No expertise</span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">1</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">2</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">3</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">4</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">5</span>
+            <span class="expertise-tick-desc">Proficient</span>
+          </div>
+        </div>
+      </div>
+      {% for error in form.expertise_fakenews.errors %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="expertise-item">
+      <div class="expertise-label-row">
+        <span class="expertise-label">Visualisation Reading</span>
+        <span class="expertise-value" id="val-visualisation">{{ form.expertise_visualisation.value|default:"0" }}</span>
+      </div>
+      <div class="expertise-slider-wrapper">
+        <input
+          type="range"
+          name="expertise_visualisation"
+          id="id_expertise_visualisation"
+          min="0" max="5" step="1"
+          value="{{ form.expertise_visualisation.value|default:'0' }}"
+          class="expertise-slider"
+          oninput="document.getElementById('val-visualisation').textContent = this.value"
+        >
+        <div class="expertise-tick-labels">
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">0</span>
+            <span class="expertise-tick-desc">No expertise</span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">1</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">2</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">3</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">4</span>
+            <span class="expertise-tick-desc"></span>
+          </div>
+          <div class="expertise-tick">
+            <span class="expertise-tick-number">5</span>
+            <span class="expertise-tick-desc">Proficient</span>
+          </div>
+        </div>
+      </div>
+      {% for error in form.expertise_visualisation.errors %}
+        <div class="error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn">Start Experiment</button>
+  </form>
+</section>
+{% endblock %}

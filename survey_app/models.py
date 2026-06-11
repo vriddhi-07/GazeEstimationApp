@@ -20,6 +20,10 @@ class ParticipantSession(models.Model):
     demographics_completed_at = models.DateTimeField(null=True, blank=True)
     reading_habits_completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    expertise_sentiment = models.PositiveSmallIntegerField(null=True, blank=True)
+    expertise_fakenews = models.PositiveSmallIntegerField(null=True, blank=True)
+    expertise_visualisation = models.PositiveSmallIntegerField(null=True, blank=True)
+    expertise_completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self) -> str:
         return f"{self.user.username if self.user else 'Anon'} - {self.session_uuid}"

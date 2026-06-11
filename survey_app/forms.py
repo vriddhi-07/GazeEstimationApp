@@ -90,3 +90,19 @@ class MediaPreferencesForm(forms.Form):
         widget=forms.RadioSelect,
         label='“A picture is worth a thousand words.” Do you agree or disagree?',
     )
+
+from django import forms
+ 
+class ExpertiseRatingForm(forms.Form):
+    expertise_sentiment = forms.IntegerField(
+        min_value=0, max_value=5, initial=0,
+        widget=forms.NumberInput(attrs={"type": "range", "min": 0, "max": 5, "step": 1}),
+    )
+    expertise_fakenews = forms.IntegerField(
+        min_value=0, max_value=5, initial=0,
+        widget=forms.NumberInput(attrs={"type": "range", "min": 0, "max": 5, "step": 1}),
+    )
+    expertise_visualisation = forms.IntegerField(
+        min_value=0, max_value=5, initial=0,
+        widget=forms.NumberInput(attrs={"type": "range", "min": 0, "max": 5, "step": 1}),
+    )

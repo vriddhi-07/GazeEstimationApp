@@ -2,7 +2,7 @@
 
 {% block content %}
 <section class="card intake-card">
-  <p class="eyebrow">Step 4 of 4</p>
+  <p class="eyebrow">Step 4 of 5</p>
   <h1>Reading and Media Habits</h1>
   <form method="post" class="stack-form habits-form">
     {% csrf_token %}
@@ -25,7 +25,7 @@
         <div class="error">{{ error }}</div>
       {% endfor %}
     </div>
-    <button type="submit" class="btn">Start Experiment</button>
+    <button type="submit" class="btn">Continue</button>
   </form>
 </section>
 {% endblock %}

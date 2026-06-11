@@ -10,6 +10,7 @@ urlpatterns = [
     path("demographics/", views.demographics_view, name="demographics"),
     path("reading-habits/", views.reading_habits_view, name="habits"),
     path("media-preferences/", views.media_preferences_view, name="media_preferences"),
+    path("expertise/", views.expertise_rating_view, name="expertise_rating"),
     path("capture-session/", views.capture_session_view, name="capture_session"),
     path("movies/", views.carousel_view, name="carousel"),
     path("movies/<int:movie_id>/", views.movie_detail_view, name="movie_detail"),
