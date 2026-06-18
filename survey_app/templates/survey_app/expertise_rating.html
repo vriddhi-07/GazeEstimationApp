@@ -19,16 +19,12 @@
           type="range"
           name="expertise_sentiment"
           id="id_expertise_sentiment"
-          min="0" max="5" step="1"
-          value="{{ form.expertise_sentiment.value|default:'0' }}"
+          min="1" max="5" step="1"
+          value="{{ form.expertise_sentiment.value|default:'1' }}"
           class="expertise-slider"
           oninput="document.getElementById('val-sentiment').textContent = this.value"
         >
         <div class="expertise-tick-labels">
-          <div class="expertise-tick">
-            <span class="expertise-tick-number">0</span>
-            <span class="expertise-tick-desc">No expertise</span>
-          </div>
           <div class="expertise-tick">
             <span class="expertise-tick-number">1</span>
             <span class="expertise-tick-desc"></span>
@@ -66,16 +62,12 @@
           type="range"
           name="expertise_fakenews"
           id="id_expertise_fakenews"
-          min="0" max="5" step="1"
-          value="{{ form.expertise_fakenews.value|default:'0' }}"
+          min="1" max="5" step="1"
+          value="{{ form.expertise_fakenews.value|default:'1' }}"
           class="expertise-slider"
           oninput="document.getElementById('val-fakenews').textContent = this.value"
         >
         <div class="expertise-tick-labels">
-          <div class="expertise-tick">
-            <span class="expertise-tick-number">0</span>
-            <span class="expertise-tick-desc">No expertise</span>
-          </div>
           <div class="expertise-tick">
             <span class="expertise-tick-number">1</span>
             <span class="expertise-tick-desc"></span>
@@ -113,16 +105,12 @@
           type="range"
           name="expertise_visualisation"
           id="id_expertise_visualisation"
-          min="0" max="5" step="1"
-          value="{{ form.expertise_visualisation.value|default:'0' }}"
+          min="1" max="5" step="1"
+          value="{{ form.expertise_visualisation.value|default:'1' }}"
           class="expertise-slider"
           oninput="document.getElementById('val-visualisation').textContent = this.value"
         >
         <div class="expertise-tick-labels">
-          <div class="expertise-tick">
-            <span class="expertise-tick-number">0</span>
-            <span class="expertise-tick-desc">No expertise</span>
-          </div>
           <div class="expertise-tick">
             <span class="expertise-tick-number">1</span>
             <span class="expertise-tick-desc"></span>

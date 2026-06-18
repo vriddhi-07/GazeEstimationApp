@@ -410,7 +410,7 @@ def demographics_view(request: HttpRequest) -> HttpResponse:
         form = DemographicForm(request.POST)
         if form.is_valid():
             participant.age = form.cleaned_data["age"]
-            participant.profession = form.cleaned_data["affiliation"]
+            participant.profession = form.cleaned_data["profession"]
             participant.education_level = form.cleaned_data["education_level"]
             participant.gender = form.cleaned_data["gender"]
             participant.demographics_completed_at = timezone.now()
