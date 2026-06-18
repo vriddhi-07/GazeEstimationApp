@@ -57,8 +57,8 @@ def get_recording_participant(request: HttpRequest) -> ParticipantSession:
 
 
 def get_onboarding_redirect(participant: ParticipantSession, request: HttpRequest) -> str | None:
-    if not request.session.get("participant_id"):
-        return "survey_app:welcome"
+    # if not request.session.get("participant_id"):
+    #     return "survey_app:welcome"
     if not participant.consent_given:
         return "survey_app:consent"
     if not participant.demographics_completed_at:
@@ -247,7 +247,9 @@ def seed_movie_data() -> None:
 
 def seed_news_data() -> None:
     active_slugs = {item["slug"] for item in NEWS_ARTICLES}
-    NewsArticle.objects.exclude(slug__in=active_slugs).delete()
+    NewsArticle.objects.exclude(slug__in=active_slugs).exclude(
+        slug__startswith="demo-"
+    ).delete()
 
     for item in NEWS_ARTICLES:
         article, _ = NewsArticle.objects.update_or_create(
@@ -268,8 +270,10 @@ def seed_news_data() -> None:
 
 
 def seed_network_data() -> None:
-    active_slugs = {item["slug"] for item in NETWORK_DIAGRAMS}
-    NetworkDiagram.objects.exclude(slug__in=active_slugs).delete()
+    active_slugs = {item["slug"] for item in NEWS_ARTICLES}
+    NewsArticle.objects.exclude(slug__in=active_slugs).exclude(
+        slug__startswith="demo-"
+    ).delete()
 
     for item in NETWORK_DIAGRAMS:
         diagram, _ = NetworkDiagram.objects.update_or_create(
@@ -347,8 +351,8 @@ def login_view(request: HttpRequest) -> HttpResponse:
             # Fetch the participant AND save the ID to the session
             participant = get_or_create_participant(request)
             request.session["participant_id"] = participant.id
+
             request.session[CONSENT_RUN_KEY] = False
-            
             return redirect("survey_app:consent")
     else:
         form = AuthenticationForm()
@@ -614,7 +618,10 @@ def news_carousel_view(request: HttpRequest) -> HttpResponse:
     progress = get_news_progress(participant)
     if progress["minimum_met"]:
         return redirect("survey_app:paas_evaluation", task_number=2)
-    return redirect("survey_app:next_task")
+    # No articles available for this user's groups and minimum not yet met.
+    # Redirecting to next_task here would cause an infinite loop, so fall
+    # through to the PAAS screen to avoid getting stuck.
+    return redirect("survey_app:paas_evaluation", task_number=2)
 
 @login_required
 @require_GET
@@ -995,8 +1002,22 @@ def next_task_view(request: HttpRequest) -> HttpResponse:
         if next_article:
             return redirect("survey_app:news_detail", article_id=next_article.id)
         return redirect("survey_app:news_carousel")
+    # if not participant.paas_responses.filter(task_number=2).exists():
+    #     return redirect("survey_app:paas_evaluation", task_number=2)
+    if not get_news_progress(participant)["minimum_met"]:
+        seed_news_data()
+        responded_article_ids = participant.news_article_responses.values_list("article_id", flat=True)
+        user_groups = request.user.groups.all()
+        next_article = NewsArticle.objects.filter(
+            target_groups__in=user_groups
+        ).exclude(id__in=responded_article_ids).distinct().first()
+        if next_article:
+            return redirect("survey_app:news_detail", article_id=next_article.id)
+        return redirect("survey_app:paas_evaluation", task_number=2)
     if not participant.paas_responses.filter(task_number=2).exists():
         return redirect("survey_app:paas_evaluation", task_number=2)
+
+    # After PAAS 2: auto-start Task 3 (Networks/Word Cloud) — pick first diagram directly
 
     # After PAAS 2: auto-start Task 3 (Networks/Word Cloud) — pick first diagram directly
     if not get_network_progress(participant)["minimum_met"]:

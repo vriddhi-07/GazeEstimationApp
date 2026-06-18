@@ -214,7 +214,7 @@ def load_review_pool() -> dict[str, list[str]]:
 
             # INCREASED DATA REQUIREMENTS: We now need a lot more reviews for 15 movies.
             # Raised from 8 to 50 minimum reviews per sentiment type.
-            if all(len(values) >= 50 for values in pools.values()):
+            if len(pools["positive"]) >= 80 and len(pools["negative"]) >= 80 and len(pools["neutral"]) >= 40:
                 return pools
 
     return pools
@@ -241,7 +241,7 @@ def build_movies() -> list[dict]:
             excerpts = review_pool[sentiment][indices[sentiment]:indices[sentiment] + 2]
             if len(excerpts) < 2:
                 excerpts = review_pool[sentiment][indices[sentiment]:]
-            indices[sentiment] += len(excerpts)
+            indices[sentiment] += 2
             if len(excerpts) == 1:
                 text = excerpts[0]
             else:
