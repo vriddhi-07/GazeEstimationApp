@@ -110,6 +110,62 @@ DEMO_MOVIES = [
             },
         ],
     },
+    {
+        "imdb_id": "demo_tt0004",
+        "title": "Echoes of Tomorrow",
+        "year": 2020,
+        "genre": "Mystery, Drama",
+        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "description": "A grieving musician begins receiving voice messages from a version of herself one year in the future.",
+        "reviews": [
+            {
+                "sentiment": "positive",
+                "text": (
+                    'Review excerpt 1: "A haunting and emotionally rich mystery that rewards '
+                    'patient viewers with a deeply satisfying resolution." '
+                    'Review excerpt 2: "The lead performance is extraordinary, carrying the '
+                    'film through its more demanding emotional stretches with quiet authority."'
+                ),
+            },
+            {
+                "sentiment": "neutral",
+                "text": (
+                    'Review excerpt 1: "An intriguing premise that is only partially realised, '
+                    'though the central performance keeps it compelling throughout." '
+                    'Review excerpt 2: "The pacing drags in the second act but the film '
+                    'recovers well enough to leave a lasting impression."'
+                ),
+            },
+        ],
+    },
+    {
+        "imdb_id": "demo_tt0005",
+        "title": "Burnout Boulevard",
+        "year": 2023,
+        "genre": "Comedy, Drama",
+        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "description": "A burnt-out city planner quits her job and accidentally becomes the spokesperson for a neighbourhood rebellion.",
+        "reviews": [
+            {
+                "sentiment": "positive",
+                "text": (
+                    'Review excerpt 1: "A sharp and surprisingly warm comedy that finds '
+                    'real heart beneath its satirical surface." '
+                    'Review excerpt 2: "Witty, well-paced, and anchored by a magnetic '
+                    'lead performance that makes even the broadest jokes land."'
+                ),
+            },
+            {
+                "sentiment": "negative",
+                "text": (
+                    'Review excerpt 1: "The film mistakes busyness for energy, cramming '
+                    'in too many subplots at the expense of its most interesting characters." '
+                    'Review excerpt 2: "A promising setup that loses its nerve by the third '
+                    'act, settling for easy resolutions where genuine conflict was needed."'
+                ),
+            },
+        ],
+    },
 ]
 
 
@@ -181,65 +237,62 @@ DEMO_ARTICLES = [
 
 DEMO_DIAGRAMS = [
     {
-    "slug": "demo-metro-map",
-    # "set_group": "Demo",
-    "title": "Demo Task A: Metro Map",
-    "type": "metromap",
-    "context": "Answer the questions using the map",
-    "image_url": "/static/survey_app/images/demometromap.png",
-    "image_alt": "Tashkent Metro Map",
-    "image_source_label": "",
-    "image_source_url": "",
-    "image_fit": "contain",
-    "image_position": "center center",
-    "image_scale": "100%",
-    "nodes": [],
-    "edges": [],
-    "question_one": "From Sobir Rhimov to Habib Abdullayev, what is the minimum number of interchanges to be made?",
-    "question_one_options": ["One", "Two", "Three", "Four"],
-    "question_two": "How many interchange stations are there?",
-    "question_two_options": ["One", "Two", "Three", "Four"],
-},
-{
-    "slug": "demo-finance-wordcloud",
-    # "set_group": "Demo",
-    "title": "Demo Task B: Finance Word Cloud",
-    "type": "wordcloud",
-    "context": "Answer the questions using the word cloud",
-    "image_url": "/static/survey_app/images/demowordcloud.jpg",
-    "image_alt": "Finance Word Cloud",
-    "image_source_label": "",
-    "image_source_url": "",
-    "image_fit": "contain",
-    "image_position": "center center",
-    "image_scale": "100%",
-    "nodes": [],
-    "edges": [],
-    "question_one": "What is the dominant theme of this word cloud?",
-    "question_one_options": ["Sports", "Finance", "Health", "Technology"],
-    "question_two": "Which currency is explicitly mentioned in the word cloud?",
-    "question_two_options": ["Dollar", "Pound", "Yen", "Rupee"],
-},
-{
-    "slug": "demo-social-network",
-    # "set_group": "Demo",
-    "title": "Demo Task C: Social Network",
-    "type": "network",
-    "context": "YOUR CONTEXT INSTRUCTION HERE",
-    "image_url": "/static/survey_app/images/demonwdiagram.png",
-    "image_alt": "Social Network Diagram",
-    "image_source_label": "",
-    "image_source_url": "",
-    "image_fit": "contain",
-    "image_position": "center center",
-    "image_scale": "100%",
-    "nodes": [],
-    "edges": [],
-    "question_one": "Who is connected to the most number of people in the network?",
-    "question_one_options": ["Anne", "Bob", "Elisa", "Carl"],
-    "question_two": "Which 2 people have no direct connection between each other?",
-    "question_two_options": ["Anne and Bob", "Elisa and Carl", "Bob and Diana", "Anne and Elisa"],
-},
+        "slug": "demo-task-a-wordcloud",
+        "title": "Demo Task A: Finance Word Cloud",
+        "type": "wordcloud",
+        "context": "Answer the questions using the word cloud",
+        "image_url": "/static/survey_app/images/demowordcloud.jpg",
+        "image_alt": "Finance Word Cloud",
+        "image_source_label": "",
+        "image_source_url": "",
+        "image_fit": "contain",
+        "image_position": "center center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "What is the dominant theme of this word cloud?",
+        "question_one_options": ["Sports", "Finance", "Health", "Technology"],
+        "question_two": "Which currency is explicitly mentioned in the word cloud?",
+        "question_two_options": ["Dollar", "Pound", "Yen", "Rupee"],
+    },
+    {
+        "slug": "demo-task-b-network",
+        "title": "Demo Task B: Social Network",
+        "type": "network",
+        "context": "YOUR CONTEXT INSTRUCTION HERE",
+        "image_url": "/static/survey_app/images/demonwdiagram.png",
+        "image_alt": "Social Network Diagram",
+        "image_source_label": "",
+        "image_source_url": "",
+        "image_fit": "contain",
+        "image_position": "center center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "Who is connected to the most number of people in the network?",
+        "question_one_options": ["Anne", "Bob", "Elisa", "Carl"],
+        "question_two": "Which 2 people have no direct connection between each other?",
+        "question_two_options": ["Anne and Bob", "Elisa and Carl", "Bob and Diana", "Anne and Elisa"],
+    },
+    {
+        "slug": "demo-task-c-metromap",
+        "title": "Demo Task C: Metro Map",
+        "type": "metromap",
+        "context": "Answer the questions using the map",
+        "image_url": "/static/survey_app/images/demometromap.png",
+        "image_alt": "Tashkent Metro Map",
+        "image_source_label": "",
+        "image_source_url": "",
+        "image_fit": "contain",
+        "image_position": "center center",
+        "image_scale": "100%",
+        "nodes": [],
+        "edges": [],
+        "question_one": "From Sobir Rhimov to Habib Abdullayev, what is the minimum number of interchanges to be made?",
+        "question_one_options": ["One", "Two", "Three", "Four"],
+        "question_two": "How many interchange stations are there?",
+        "question_two_options": ["One", "Two", "Three", "Four"],
+    },
 ]
 
 
@@ -316,6 +369,12 @@ class Command(BaseCommand):
             self.stdout.write(f"  Seeded article: {item['headline'][:50]}")
 
         # ── 6. Seed demo network diagrams ─────────────────────────────────────
+        # ── 6. Seed demo network diagrams ─────────────────────────────────────
+        # Remove any old demo diagrams whose slugs have changed
+        current_slugs = {item["slug"] for item in DEMO_DIAGRAMS}
+        NetworkDiagram.objects.filter(slug__startswith="demo-").exclude(
+            slug__in=current_slugs
+        ).delete()
         for item in DEMO_DIAGRAMS:
             diagram, _ = NetworkDiagram.objects.update_or_create(
                 slug=item["slug"],
