@@ -238,6 +238,7 @@ DEMO_ARTICLES = [
 DEMO_DIAGRAMS = [
     {
         "slug": "demo-task-a-wordcloud",
+        "order":"1",
         "title": "Demo Task A: Finance Word Cloud",
         "type": "wordcloud",
         "context": "Answer the questions using the word cloud",
@@ -257,9 +258,10 @@ DEMO_DIAGRAMS = [
     },
     {
         "slug": "demo-task-b-network",
+        "order":"2",
         "title": "Demo Task B: Social Network",
         "type": "network",
-        "context": "YOUR CONTEXT INSTRUCTION HERE",
+        "context": "Answer the questions using the diagram",
         "image_url": "/static/survey_app/images/demonwdiagram.png",
         "image_alt": "Social Network Diagram",
         "image_source_label": "",
@@ -276,6 +278,7 @@ DEMO_DIAGRAMS = [
     },
     {
         "slug": "demo-task-c-metromap",
+        "order":"3",
         "title": "Demo Task C: Metro Map",
         "type": "metromap",
         "context": "Answer the questions using the map",
@@ -379,6 +382,7 @@ class Command(BaseCommand):
             diagram, _ = NetworkDiagram.objects.update_or_create(
                 slug=item["slug"],
                 defaults={
+                    "order": item.get("order", 0),
                     "title": item["title"],
                     "context": item["context"],
                     "image_url": item.get("image_url", ""),

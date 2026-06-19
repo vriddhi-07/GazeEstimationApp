@@ -269,9 +269,10 @@ def seed_news_data() -> None:
         article.target_groups.add(group)
 
 
+
 def seed_network_data() -> None:
-    active_slugs = {item["slug"] for item in NEWS_ARTICLES}
-    NewsArticle.objects.exclude(slug__in=active_slugs).exclude(
+    active_slugs = {item["slug"] for item in NETWORK_DIAGRAMS}
+    NetworkDiagram.objects.exclude(slug__in=active_slugs).exclude(
         slug__startswith="demo-"
     ).delete()
 
@@ -279,6 +280,7 @@ def seed_network_data() -> None:
         diagram, _ = NetworkDiagram.objects.update_or_create(
             slug=item["slug"],
             defaults={
+                "order": item.get("order", 0),
                 "title": item["title"],
                 "context": item["context"],
                 "image_url": item.get("image_url", ""),
@@ -293,13 +295,10 @@ def seed_network_data() -> None:
                 "question_two_options": item["question_two_options"],
             },
         )
-        
-        # Link the diagram to the correct Cohort Group
+
         group_name = f"Set {item.get('set_group', 1)}"
         group, _ = Group.objects.get_or_create(name=group_name)
-        diagram.target_groups.add(group)
-
-
+        diagram.target_groups.set([group])
 def get_network_display_hints(slug: str) -> dict[str, str]:
     item = next((entry for entry in NETWORK_DIAGRAMS if entry["slug"] == slug), None)
     if not item:

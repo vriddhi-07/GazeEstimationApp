@@ -148,6 +148,7 @@ class NewsArticleResponse(models.Model):
 class NetworkDiagram(models.Model):
     slug = models.SlugField(unique=True)
     target_groups = models.ManyToManyField(Group, related_name='targeted_diagrams', blank=True)
+    order = models.PositiveIntegerField(default=0)
     title = models.CharField(max_length=255)
     context = models.TextField()
     image_url = models.URLField(blank=True)
@@ -162,7 +163,7 @@ class NetworkDiagram(models.Model):
     question_two_options = models.JSONField(default=list)
 
     class Meta:
-        ordering = ["title"]
+        ordering = ["order", "title"]
 
     def __str__(self) -> str:
         return self.title
