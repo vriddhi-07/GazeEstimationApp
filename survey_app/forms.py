@@ -15,7 +15,6 @@ GENDER_CHOICES = [
     ("male", "Male"),
     ("non_binary", "Non-binary"),
     ("prefer_not_to_say", "Prefer not to say"),
-    ("self_describe", "Self-describe"),
 ]
 
 WORDS_READ_DAILY_CHOICES = [
@@ -47,7 +46,6 @@ PROFESSION_CHOICES = [
     ("student", "Student"),
     ("faculty", "Faculty"),
     ("non-teaching staff", "Non-Teaching Staff"),
-    ("not affiliated", "Not Affiliated"),
 ]
 
 class ConsentForm(forms.Form):

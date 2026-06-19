@@ -58,13 +58,13 @@ MOVIE_METADATA = [
 
     # --- SET 2 (Users 5, 6, 7, 8) ---
     {
-        "imdb_id": "tt0167260",
+        "imdb_id": "tt1285016",
         "set_group": 2,
-        "title": "The Lord of the Rings: The Return of the King",
-        "year": 2003,
-        "genre": "Adventure, Drama, Fantasy",
-        "poster_url": "/static/survey_app/posters/lotr_return_of_the_king.svg",
-        "description": "The final battle for Middle-earth unfolds as friends race to destroy the ring.",
+        "title": "The Social Network",
+        "year": 2010,
+        "genre": "Biography, Drama",
+        "poster_url": "/static/survey_app/posters/the_social_network.svg",
+        "description": "Harvard student Mark Zuckerberg creates a social networking website that grows into a global phenomenon, but the friendships and lawsuits that follow change everything.",
     },
     {
         "imdb_id": "tt1375666",

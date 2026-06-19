@@ -169,9 +169,8 @@ h1 { margin-top: 0; }
 .movie-card img {
   width: 100%;
   aspect-ratio: 9 / 13;
-  height: auto;
-  object-fit: contain;
-  background: #10131c;
+  object-fit: cover;
+  display: block;
 }
 
 .article-card {
@@ -246,6 +245,26 @@ h1 { margin-top: 0; }
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  height: 56px;
+  flex: none;
+  box-sizing: border-box;
+}
+
+.movie-card .meta strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movie-card img {
+  width: 100%;
+  height: 320px;
+  flex: none;
+  object-fit: contain;
+  background: #10131c;
 }
 
 .movie-detail-overlay {
@@ -1070,7 +1089,7 @@ h1 { margin-top: 0; }
   }
   .carousel-page { min-height: auto; }
   .movie-card { min-width: 190px; }
-  .movie-card img { aspect-ratio: 9 / 13; height: auto; }
+  .movie-card img { height: 260px; }
   .movie-detail-window { padding: 1.2rem 1rem; }
   .option-row { gap: 0.6rem; }
   .review-focus,

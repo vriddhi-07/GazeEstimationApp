@@ -1,5 +1,11 @@
 {% extends "survey_app/base.html" %}
-
+{% block brand %}
+  {% if diagram.type == "wordcloud" %}Word Cloud Study
+  {% elif diagram.type == "network" %}Network Diagram Study
+  {% elif diagram.type == "metromap" %}Metro Map Study
+  {% else %}Diagram Study
+  {% endif %}
+{% endblock %}
 {% block content %}
 <section class="question-stage">
   <p class="stage-kicker">Task 3: Network Diagram Interpretation</p>
