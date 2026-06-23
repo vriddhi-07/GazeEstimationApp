@@ -144,7 +144,8 @@ h1 { margin-top: 0; }
 }
 
 .movie-card {
-  min-width: 230px;
+  min-width: clamp(150px, 22vw, 230px);
+  flex: 0 0 clamp(150px, 22vw, 230px);
   border: 1px solid rgba(20, 25, 38, 0.15);
   border-radius: 12px;
   background: #fff;
@@ -168,9 +169,10 @@ h1 { margin-top: 0; }
 
 .movie-card img {
   width: 100%;
-  aspect-ratio: 9 / 13;
-  object-fit: cover;
-  display: block;
+  height: clamp(220px, 32vw, 320px);
+  flex: none;
+  object-fit: contain;
+  background: #10131c;
 }
 
 .article-card {
@@ -1088,8 +1090,8 @@ h1 { margin-top: 0; }
     padding: 0.9rem;
   }
   .carousel-page { min-height: auto; }
-  .movie-card { min-width: 190px; }
-  .movie-card img { height: 260px; }
+  /* .movie-card { min-width: 190px; }
+  .movie-card img { height: 260px; } */
   .movie-detail-window { padding: 1.2rem 1rem; }
   .option-row { gap: 0.6rem; }
   .review-focus,

@@ -32,7 +32,10 @@ from survey_app.models import (
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SST_PATH = BASE_DIR / "data" / "stanford_sentiment_treebank"
 MAX_DEMO_REVIEW_WORDS = 150
-MIN_DEMO_REVIEW_WORDS = 40
+MIN_DEMO_REVIEW_WORDS = 12
+DEMO_MIN_SENTENCES = 2
+DEMO_MAX_SENTENCES = 3
+DEMO_TARGET_MIN_WORDS = 100
 
 
 def _normalize_text(text: str) -> str:
@@ -81,26 +84,67 @@ def load_demo_review_pool() -> dict[str, list[str]]:
             if text not in pools[sentiment]:
                 pools[sentiment].append(text)
 
-            if all(len(pools[s]) >= 10 for s in pools):
+            if all(len(pools[s]) >= 25 for s in pools):
                 return pools
 
     return pools
 
 
-def pick_demo_review(pool: dict[str, list[str]], sentiment: str, index: int) -> dict:
+def build_demo_paragraph(sentences: list[str]) -> str:
+    """Join consecutive same-sentiment sentences into one flowing paragraph."""
+    return " ".join(sentences)
+
+
+def pick_demo_review(
+    pool: dict[str, list[str]], sentiment: str, start_index: int
+) -> tuple[dict, int]:
     """
-    Deterministically pick the (index)th-longest available excerpt of the
-    given sentiment, so re-running the command always yields the same text.
+    Build a single review paragraph by concatenating 2-3 sentences of the
+    given sentiment, so the demo review reads as one excerpt with enough
+    length to fill the review box, while staying under MAX_DEMO_REVIEW_WORDS.
+    Returns (review_dict, next_start_index) so repeated calls advance
+    through the pool without reusing the same sentences twice.
     """
     candidates = sorted(pool[sentiment], key=len, reverse=True)
     if not candidates:
         raise ValueError(
-            f"create_demo_user: no '{sentiment}' excerpt available under "
-            f"{MAX_DEMO_REVIEW_WORDS} words. Widen MIN_DEMO_REVIEW_WORDS or "
-            f"check the SST dataset path."
+            f"create_demo_user: no '{sentiment}' excerpts available. "
+            f"Widen MIN_DEMO_REVIEW_WORDS or check the SST dataset path."
         )
-    chosen_text = candidates[index % len(candidates)]
-    return {"sentiment": sentiment, "text": chosen_text}
+
+    idx = start_index
+    chosen: list[str] = []
+    word_total = 0
+
+    while idx < start_index + len(candidates) and len(chosen) < DEMO_MAX_SENTENCES:
+        candidate = candidates[idx % len(candidates)]
+        idx += 1
+        candidate_words = len(candidate.split())
+
+        if (
+            len(chosen) >= DEMO_MIN_SENTENCES
+            and word_total + candidate_words > MAX_DEMO_REVIEW_WORDS
+        ):
+            break
+
+        if candidate in chosen:
+            continue
+
+        chosen.append(candidate)
+        word_total += candidate_words
+
+        if len(chosen) >= DEMO_MIN_SENTENCES and word_total >= DEMO_TARGET_MIN_WORDS:
+            break
+
+    if len(chosen) < DEMO_MIN_SENTENCES:
+        raise ValueError(
+            f"create_demo_user: could not gather {DEMO_MIN_SENTENCES} distinct "
+            f"'{sentiment}' sentences (only found {len(chosen)}). "
+            f"Widen MIN_DEMO_REVIEW_WORDS or lower DEMO_MIN_SENTENCES."
+        )
+
+    text = build_demo_paragraph(chosen)
+    return {"sentiment": sentiment, "text": text}, idx
 
 
 # ── DUMMY MOVIES ──────────────────────────────────────────────────────────────
@@ -335,8 +379,9 @@ class Command(BaseCommand):
             movie.target_groups.set([demo_group])
 
             sentiment = item["review_sentiment"]
-            review = pick_demo_review(review_pool, sentiment, sentiment_counters[sentiment])
-            sentiment_counters[sentiment] += 1
+            review, sentiment_counters[sentiment] = pick_demo_review(
+                review_pool, sentiment, sentiment_counters[sentiment]
+            )
 
             movie.reviews.all().delete()
             Review.objects.create(
