@@ -173,6 +173,47 @@
           </div>
         </div>
       </div>
+
+      {% if difficulty_items %}
+        <h3 style="margin-top: 2.5rem;">Rate the difficulty of each task with respect to each other.</h3>
+        <p style="color: #666; margin-top: -0.5rem;">
+          {% if task_number == 1 %}Sentiment Analysis of:
+          {% elif task_number == 2 %}Fake News Analysis of:
+          {% elif task_number == 3 %}Visualization of:
+          {% endif %}
+        </p>
+
+        <div class="difficulty-items">
+          {% for item in difficulty_items %}
+            <div class="difficulty-item-row">
+              <p class="difficulty-item-label">{{ item.label }}</p>
+              <div class="difficulty-options">
+                <label class="difficulty-option">
+                  <input type="radio" name="difficulty_{{ item.key }}" value="1" required>
+                  <span class="difficulty-option-text">
+                    <span class="num">1</span>
+                    <span class="text">Easy</span>
+                  </span>
+                </label>
+                <label class="difficulty-option">
+                  <input type="radio" name="difficulty_{{ item.key }}" value="2" required>
+                  <span class="difficulty-option-text">
+                    <span class="num">2</span>
+                    <span class="text">Moderate</span>
+                  </span>
+                </label>
+                <label class="difficulty-option">
+                  <input type="radio" name="difficulty_{{ item.key }}" value="3" required>
+                  <span class="difficulty-option-text">
+                    <span class="num">3</span>
+                    <span class="text">Difficult</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
 
     <button type="submit" class="btn">Submit Rating</button>

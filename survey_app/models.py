@@ -147,6 +147,7 @@ class NewsArticleResponse(models.Model):
 
 class NetworkDiagram(models.Model):
     slug = models.SlugField(unique=True)
+    type = models.CharField(max_length=20)
     target_groups = models.ManyToManyField(Group, related_name='targeted_diagrams', blank=True)
     order = models.PositiveIntegerField(default=0)
     title = models.CharField(max_length=255)
@@ -200,6 +201,10 @@ class PaasResponse(models.Model):
     )
     task_number = models.PositiveSmallIntegerField() # 1=Movies, 2=News, 3=Networks
     rating = models.PositiveSmallIntegerField()
+    # Per-item relative difficulty ratings for this task, e.g.
+    # {"movie:14": 2, "movie:9": 1, "movie:22": 3}
+    # Keys are "<item_type>:<item_id>", values are 1 (Easy), 2 (Moderate), or 3 (Difficult).
+    item_difficulty_ratings = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1193,6 +1193,70 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
     return JsonResponse({"ok": True, "queued": True})
 
 
+def get_paas_difficulty_items(participant: ParticipantSession, task_number: int) -> list[dict]:
+    """
+    Build the list of items the participant actually saw for this task,
+    each as {"key": "<type>:<id>", "label": <display name>}, so the
+    relative-difficulty question can show real item names.
+    """
+    items: list[dict] = []
+
+    if task_number == 1:
+        responses = (
+            participant.movie_review_responses
+            .select_related("movie")
+            .order_by("created_at")
+        )
+        seen_ids = set()
+        for response in responses:
+            if response.movie_id in seen_ids:
+                continue
+            seen_ids.add(response.movie_id)
+            items.append({
+                "key": f"movie:{response.movie_id}",
+                "label": response.movie.title,
+            })
+
+    elif task_number == 2:
+        responses = (
+            participant.news_article_responses
+            .select_related("article")
+            .order_by("created_at")
+        )
+        seen_ids = set()
+        for response in responses:
+            if response.article_id in seen_ids:
+                continue
+            seen_ids.add(response.article_id)
+            items.append({
+                "key": f"article:{response.article_id}",
+                "label": response.article.headline,
+            })
+
+    elif task_number == 3:
+        type_labels = {
+            "wordcloud": "Word Cloud",
+            "network": "Network Diagram",
+            "metromap": "Metro Map",
+        }
+        responses = (
+            participant.network_diagram_responses
+            .select_related("diagram")
+            .order_by("created_at")
+        )
+        seen_ids = set()
+        for response in responses:
+            if response.diagram_id in seen_ids:
+                continue
+            seen_ids.add(response.diagram_id)
+            label = type_labels.get(response.diagram.type, response.diagram.title)
+            items.append({
+                "key": f"diagram:{response.diagram_id}",
+                "label": label,
+            })
+
+    return items
+
 @require_http_methods(["GET", "POST"])
 def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse:
     participant = get_or_create_participant(request)
@@ -1203,13 +1267,29 @@ def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse
     if PaasResponse.objects.filter(participant=participant, task_number=task_number).exists():
         return redirect("survey_app:next_task")
 
+    difficulty_items = get_paas_difficulty_items(participant, task_number)
+
     if request.method == "POST":
         rating = request.POST.get("paas_rating")
-        if rating and rating.isdigit() and 1 <= int(rating) <= 9:
+        difficulty_ratings: dict[str, int] = {}
+        difficulty_valid = True
+
+        for item in difficulty_items:
+            field_name = f"difficulty_{item['key']}"
+            value = request.POST.get(field_name)
+            if value and value.isdigit() and 1 <= int(value) <= 3:
+                difficulty_ratings[item["key"]] = int(value)
+            else:
+                difficulty_valid = False
+
+        if rating and rating.isdigit() and 1 <= int(rating) <= 9 and difficulty_valid:
             PaasResponse.objects.update_or_create(
                 participant=participant,
                 task_number=task_number,
-                defaults={"rating": int(rating)}
+                defaults={
+                    "rating": int(rating),
+                    "item_difficulty_ratings": difficulty_ratings,
+                }
             )
             
             return redirect("survey_app:next_task")
@@ -1220,7 +1300,8 @@ def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse
                 "survey_app/paas_evaluation.html", 
                 {
                     "task_number": task_number,
-                    "error_message": "Please select a mental effort rating from 1 to 9.",
+                    "difficulty_items": difficulty_items,
+                    "error_message": "Please select a mental effort rating from 1 to 9, and a difficulty rating for every item listed below.",
                     "record_webcam": True,
                 }
             )
@@ -1230,6 +1311,7 @@ def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse
         "survey_app/paas_evaluation.html", 
         {
             "task_number": task_number,
+            "difficulty_items": difficulty_items,
             "record_webcam": True,
         }
     )
