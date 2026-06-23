@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="520" viewBox="0 0 360 520" role="img" aria-label="The Lord of the Rings: The Return of the King poster">
   <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#42275a"/><stop offset="100%" stop-color="#734b6d"/></linearGradient></defs>
   <rect width="360" height="520" fill="url(#g)"/>
-  <text x="180" y="216" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#fff">THE LORD OF THE RINGS</text>
-  <text x="180" y="252" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="#fff">THE RETURN OF THE KING</text>
-  <text x="180" y="292" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="#f8d7ff">2003</text>
+  <text x="180" y="216" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#fff">MA RAINEY'S</text>
+  <text x="180" y="252" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="#fff">BLACK BOTTOM</text>
+  <text x="180" y="292" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="#f8d7ff">2020</text>
 </svg>

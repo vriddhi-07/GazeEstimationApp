@@ -1,254 +1,313 @@
-from pathlib import Path
+import csv
+import random
 import re
-
-import pytreebank
-
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SST_PATH = BASE_DIR / "data" / "stanford_sentiment_treebank"
-MAX_WORDS = 150
+REVIEWS_CSV_PATH = BASE_DIR / "data" / "jumr_reviews.csv"
+
+MAX_REVIEW_WORDS = 150
+
+# Map raw "Overall Sentiment" CSV values to our sentiment labels.
+SENTIMENT_CODE_MAP = {
+    "1": "positive",
+    "0": "neutral",
+    "-1": "negative",
+}
+
+# Matches emoji and other pictographic symbols so they can be stripped
+# from review text before it's shown to participants.
+_EMOJI_PATTERN = re.compile(
+    "["
+    "\U0001F300-\U0001FAFF"  # symbols & pictographs, supplemental symbols
+    "\U00002600-\U000027BF"  # misc symbols, dingbats
+    "\U0001F1E6-\U0001F1FF"  # flags
+    "\U00002700-\U000027BF"
+    "\U0001F900-\U0001F9FF"
+    "\U00002B00-\U00002BFF"
+    "\U0001FA70-\U0001FAFF"
+    "]+",
+    flags=re.UNICODE,
+)
+
+
+def strip_emojis(text: str) -> str:
+    cleaned = _EMOJI_PATTERN.sub("", text)
+    # Collapse any double spaces left behind after removing emojis.
+    return re.sub(r"\s{2,}", " ", cleaned).strip()
 
 MOVIE_METADATA = [
     # --- SET 1 (Users 1, 2, 3, 4) ---
     {
-        "imdb_id": "tt0111161",
-        "set_group": 1,
-        "title": "The Shawshank Redemption",
-        "year": 1994,
-        "genre": "Drama",
-        "poster_url": "/static/survey_app/posters/the_shawshank_redemption.svg",
-        "description": "Two imprisoned men forge a friendship over years, finding hope and redemption through small acts of resistance.",
-    },
-    {
-        "imdb_id": "tt0068646",
-        "set_group": 1,
-        "title": "The Godfather",
-        "year": 1972,
-        "genre": "Crime, Drama",
-        "poster_url": "/static/survey_app/posters/the_godfather.svg",
-        "description": "The aging patriarch of a crime family transfers control of his empire to his reluctant son.",
-    },
-    {
-        "imdb_id": "tt0468569",
-        "set_group": 1,
-        "title": "The Dark Knight",
-        "year": 2008,
-        "genre": "Action, Crime, Drama",
-        "poster_url": "/static/survey_app/posters/the_dark_knight.svg",
-        "description": "Batman faces a chaotic adversary who pushes Gotham to the edge and tests the limits of justice.",
-    },
-    {
-        "imdb_id": "tt0109830",
-        "set_group": 1,
-        "title": "Forrest Gump",
-        "year": 1994,
-        "genre": "Drama, Romance",
-        "poster_url": "/static/survey_app/posters/forrest_gump.svg",
-        "description": "A kind-hearted man experiences major moments of U.S. history while holding onto unwavering love and optimism.",
-    },
-    {
-        "imdb_id": "tt0133093",
-        "set_group": 1,
-        "title": "The Matrix",
-        "year": 1999,
-        "genre": "Action, Sci-Fi",
-        "poster_url": "/static/survey_app/posters/the_matrix.svg",
-        "description": "A hacker discovers reality is a simulation and joins a rebellion against machine control.",
-    },
-
-    # --- SET 2 (Users 5, 6, 7, 8) ---
-    {
-        "imdb_id": "tt1285016",
-        "set_group": 2,
-        "title": "The Social Network",
-        "year": 2010,
-        "genre": "Biography, Drama",
-        "poster_url": "/static/survey_app/posters/the_social_network.svg",
-        "description": "Harvard student Mark Zuckerberg creates a social networking website that grows into a global phenomenon, but the friendships and lawsuits that follow change everything.",
-    },
-    {
-        "imdb_id": "tt1375666",
-        "set_group": 2,
-        "title": "Inception",
-        "year": 2010,
-        "genre": "Action, Adventure, Sci-Fi",
-        "poster_url": "/static/survey_app/posters/inception.svg",
-        "description": "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea.",
-    },
-    {
-        "imdb_id": "tt0110912",
-        "set_group": 2,
-        "title": "Pulp Fiction",
-        "year": 1994,
-        "genre": "Crime, Drama",
-        "poster_url": "/static/survey_app/posters/pulp_fiction.svg",
-        "description": "The lives of two mob hitmen, a boxer, a gangster, and his wife intertwine in four tales of violence and redemption.",
-    },
-    {
-        "imdb_id": "tt0137523",
-        "set_group": 2,
-        "title": "Fight Club",
-        "year": 1999,
-        "genre": "Drama",
-        "poster_url": "/static/survey_app/posters/fight_club.svg",
-        "description": "An insomniac office worker and a devil-may-care soap maker form an underground fight club that evolves into much more.",
-    },
-    {
+        "csv_name": "Interstellar",
+        "target_sentiment": "positive",
         "imdb_id": "tt0816692",
-        "set_group": 2,
+        "set_group": 1,
         "title": "Interstellar",
         "year": 2014,
         "genre": "Adventure, Drama, Sci-Fi",
         "poster_url": "/static/survey_app/posters/interstellar.svg",
         "description": "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
     },
+    {
+        "csv_name": "Avengers: Endgame",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt4154796",
+        "set_group": 1,
+        "title": "Avengers: Endgame",
+        "year": 2019,
+        "genre": "Action, Adventure, Drama",
+        "poster_url": "/static/survey_app/posters/avengers_endgame.svg",
+        "description": "After the devastating events of Infinity War, the remaining Avengers assemble once more to undo Thanos's actions and restore order to the universe.",
+    },
+    {
+        "csv_name": "Die Hard",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt0095016",
+        "set_group": 1,
+        "title": "Die Hard",
+        "year": 1988,
+        "genre": "Action, Thriller",
+        "poster_url": "/static/survey_app/posters/die_hard.svg",
+        "description": "An NYPD officer tries to save his wife and several others taken hostage by terrorists during a Christmas party at the Nakatomi Plaza in Los Angeles.",
+    },
+    {
+        "csv_name": "Star Wars",
+        "target_sentiment": "positive",
+        "imdb_id": "tt0076759",
+        "set_group": 1,
+        "title": "Star Wars",
+        "year": 1977,
+        "genre": "Action, Adventure, Fantasy",
+        "poster_url": "/static/survey_app/posters/star_wars.svg",
+        "description": "Luke Skywalker joins forces with a Jedi Knight, a cocky pilot, a Wookiee and two droids to save the galaxy from the Empire's world-destroying battle station.",
+    },
+    {
+        "csv_name": "Wonder Woman 1984",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt7126948",
+        "set_group": 1,
+        "title": "Wonder Woman 1984",
+        "year": 2020,
+        "genre": "Action, Adventure, Fantasy",
+        "poster_url": "/static/survey_app/posters/wonder_woman.svg",
+        "description": "Diana must contend with a work colleague and businessman, whose desire for unlimited power leads him on a global rampage, and a mysterious villain.",
+    },
+
+    # --- SET 2 (Users 5, 6, 7, 8) ---
+    {
+        "csv_name": "Tenet",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt6723592",
+        "set_group": 2,
+        "title": "Tenet",
+        "year": 2020,
+        "genre": "Action, Sci-Fi, Thriller",
+        "poster_url": "/static/survey_app/posters/tenet.svg",
+        "description": "A secret agent embarks on a dangerous, time-bending mission to prevent a global catastrophe by manipulating the flow of time itself.",
+    },
+    {
+        "csv_name": "Ma Rainey's Black Bottom",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt10545296",
+        "set_group": 2,
+        "title": "Ma Rainey's Black Bottom",
+        "year": 2020,
+        "genre": "Drama, Music",
+        "poster_url": "/static/survey_app/posters/ma_raineys_black_bottom.svg",
+        "description": "Tensions and temperatures rise during a 1920s recording session in Chicago as a band waits for their iconic singer to arrive.",
+    },
+    {
+        "csv_name": "It's a Wonderful Life",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt0038650",
+        "set_group": 2,
+        "title": "It's a Wonderful Life",
+        "year": 1946,
+        "genre": "Drama, Family, Fantasy",
+        "poster_url": "/static/survey_app/posters/its_a_wonderful_life.svg",
+        "description": "An angel is sent from heaven to help a desperately frustrated businessman by showing him what life would have been like if he had never existed.",
+    },
+    {
+        "csv_name": "The Sound of Music",
+        "target_sentiment": "negative",
+        "imdb_id": "tt0059742",
+        "set_group": 2,
+        "title": "The Sound of Music",
+        "year": 1965,
+        "genre": "Biography, Drama, Family",
+        "poster_url": "/static/survey_app/posters/the_sound_of_music.svg",
+        "description": "A young woman who has trained to be a governess in 1930s Austria comes to the von Trapp family, a widower and his seven children.",
+    },
+    {
+        "csv_name": "Promising Young Woman",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt9620292",
+        "set_group": 2,
+        "title": "Promising Young Woman",
+        "year": 2020,
+        "genre": "Crime, Drama, Mystery",
+        "poster_url": "/static/survey_app/posters/promising_young_woman.svg",
+        "description": "A woman, haunted by a tragic event in her past, takes revenge against the men who cross her path.",
+    },
 
     # --- SET 3 (Users 9, 10, 11, 12) ---
     {
-        "imdb_id": "tt0099685",
+        "csv_name": "Soul",
+        "target_sentiment": "neutral",
+        "imdb_id": "tt2948372",
         "set_group": 3,
-        "title": "Goodfellas",
+        "title": "Soul",
+        "year": 2020,
+        "genre": "Animation, Adventure, Comedy",
+        "poster_url": "/static/survey_app/posters/soul.svg",
+        "description": "After landing the gig of a lifetime, a jazz pianist suddenly finds himself trapped in a strange land between Earth and the afterlife.",
+    },
+    {
+        "csv_name": "Palm Springs",
+        "target_sentiment": "positive",
+        "imdb_id": "tt8016756",
+        "set_group": 3,
+        "title": "Palm Springs",
+        "year": 2020,
+        "genre": "Comedy, Fantasy, Romance",
+        "poster_url": "/static/survey_app/posters/palm_springs.svg",
+        "description": "Two wedding guests get stuck in a time loop together, repeating the same day over and over, and forming an unexpected bond.",
+    },
+    {
+        "csv_name": "Sylvie's Love",
+        "target_sentiment": "negative",
+        "imdb_id": "tt9559338",
+        "set_group": 3,
+        "title": "Sylvie's Love",
+        "year": 2020,
+        "genre": "Drama, Music, Romance",
+        "poster_url": "/static/survey_app/posters/sylvies_love.svg",
+        "description": "In 1950s New York, a savvy and ambitious woman falls in love with a saxophonist, igniting a passion that lasts through marriages, career aspirations, and parenthood.",
+    },
+    {
+        "csv_name": "Home Alone",
+        "target_sentiment": "negative",
+        "imdb_id": "tt0099785",
+        "set_group": 3,
+        "title": "Home Alone",
         "year": 1990,
-        "genre": "Biography, Crime, Drama",
-        "poster_url": "/static/survey_app/posters/goodfellas.svg",
-        "description": "The story of Henry Hill and his life in the mob, covering his relationship with his wife Karen Hill and his mob partners.",
+        "genre": "Comedy, Family",
+        "poster_url": "/static/survey_app/posters/home_alone.svg",
+        "description": "An eight-year-old troublemaker, mistakenly left home alone, must defend his house against a pair of burglars on Christmas Eve.",
     },
     {
-        "imdb_id": "tt6751668",
+        "csv_name": "Elf",
+        "target_sentiment": "positive",
+        "imdb_id": "tt0319343",
         "set_group": 3,
-        "title": "Parasite",
-        "year": 2019,
-        "genre": "Drama, Thriller",
-        "poster_url": "/static/survey_app/posters/parasite.svg",
-        "description": "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
+        "title": "Elf",
+        "year": 2003,
+        "genre": "Comedy, Family, Fantasy",
+        "poster_url": "/static/survey_app/posters/elf.svg",
+        "description": "Raised as an elf at the North Pole, a human travels to New York City to meet his biological father and discover his true identity.",
     },
-    {
-        "imdb_id": "tt0172495",
-        "set_group": 3,
-        "title": "Gladiator",
-        "year": 2000,
-        "genre": "Action, Adventure, Drama",
-        "poster_url": "/static/survey_app/posters/gladiator.svg",
-        "description": "A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.",
-    },
-    {
-        "imdb_id": "tt0102926",
-        "set_group": 3,
-        "title": "The Silence of the Lambs",
-        "year": 1991,
-        "genre": "Crime, Drama, Thriller",
-        "poster_url": "/static/survey_app/posters/the_silence_of_the_lambs.svg",
-        "description": "A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer.",
-    },
-    {
-        "imdb_id": "tt0482571",
-        "set_group": 3,
-        "title": "The Prestige",
-        "year": 2006,
-        "genre": "Drama, Mystery, Sci-Fi",
-        "poster_url": "/static/survey_app/posters/the_prestige.svg",
-        "description": "After a tragic accident, two stage magicians in 1890s London engage in a battle to create the ultimate illusion.",
-    }
 ]
 
 
-def normalize_text(text: str) -> str:
-    text = re.sub(r"\s+", " ", text).strip()
-    replacements = {
-        " n't": "n't",
-        " 's": "'s",
-        " 're": "'re",
-        " 've": "'ve",
-        " 'm": "'m",
-        " 'd": "'d",
-        " 'll": "'ll",
-        " ,": ",",
-        " .": ".",
-        " !": "!",
-        " ?": "?",
-        " ;": ";",
-        " :": ":",
-        "( ": "(",
-        " )": ")",
-    }
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    return text
+def load_reviews_by_movie() -> dict[str, list[dict]]:
+    """
+    Load the JUMR CSV and bucket reviews by movie name.
+    Strips emojis from review text, then keeps only reviews that are
+    MAX_REVIEW_WORDS words or fewer (measured AFTER emoji stripping).
+    Each entry is {"text": ..., "sentiment": ..., "word_count": ...}.
+    """
+    buckets: dict[str, list[dict]] = {}
 
+    with open(REVIEWS_CSV_PATH, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = (row.get("Name") or "").strip()
+            review_text = (row.get("Review") or "").strip()
+            sentiment_code = (row.get("Overall Sentiment") or "").strip()
 
-def truncate_words(text: str, limit: int = MAX_WORDS) -> str:
-    words = text.split()
-    if len(words) <= limit:
-        return text
-    return " ".join(words[:limit]).rstrip(" ,;:") + "..."
-
-
-def is_complete_review_excerpt(text: str) -> bool:
-    return text.endswith((".", "!", "?", ".'", "!'","?'","''"))
-
-
-def load_review_pool() -> dict[str, list[str]]:
-    dataset = pytreebank.load_sst(path=str(SST_PATH))
-    pools = {"positive": [], "neutral": [], "negative": []}
-
-    for split_name in ("train", "dev", "test"):
-        for tree in dataset[split_name]:
-            text = truncate_words(normalize_text(tree.to_lines()[0]))
-            word_count = len(text.split())
-            if word_count < 40 or word_count > 120:
-                continue
-            if text.startswith("..."):
-                continue
-            if not is_complete_review_excerpt(text):
+            if not name or not review_text or sentiment_code not in SENTIMENT_CODE_MAP:
                 continue
 
-            if tree.label >= 3:
-                sentiment = "positive"
-            elif tree.label == 2:
-                sentiment = "neutral"
-            else:
-                sentiment = "negative"
+            review_text = strip_emojis(review_text)
+            if not review_text:
+                continue
 
-            if text not in pools[sentiment]:
-                pools[sentiment].append(text)
+            word_count = len(review_text.split())
+            if word_count > MAX_REVIEW_WORDS:
+                continue
 
-            # INCREASED DATA REQUIREMENTS: We now need a lot more reviews for 15 movies.
-            # Raised from 8 to 50 minimum reviews per sentiment type.
-            if len(pools["positive"]) >= 80 and len(pools["negative"]) >= 80 and len(pools["neutral"]) >= 40:
-                return pools
+            sentiment = SENTIMENT_CODE_MAP[sentiment_code]
+            buckets.setdefault(name, [])
+            buckets[name].append(
+                {"text": review_text, "sentiment": sentiment, "word_count": word_count}
+            )
 
-    return pools
+    return buckets
 
 
-def build_movies() -> list[dict]:
-    review_pool = load_review_pool()
-    
-    # Expanded to exactly 15 plans to match the 15 movies
-    sentiment_plan = [
-        ("positive", "positive"),
-        ("positive", "neutral"),
-        ("positive", "negative"),
-        ("neutral", "positive"),
-        ("negative", "positive"),
-    ] * 3 
-    
-    indices = {"positive": 0, "neutral": 0, "negative": 0}
+def _validate_reviews(reviews_by_movie: dict[str, list[dict]]) -> None:
+    """
+    Confirm every movie in MOVIE_METADATA has at least one review matching
+    its target_sentiment, at or under MAX_REVIEW_WORDS words. Raises a
+    clear error immediately if not.
+    """
+    missing = []
+    for metadata in MOVIE_METADATA:
+        csv_name = metadata["csv_name"]
+        target_sentiment = metadata["target_sentiment"]
+        candidates = [
+            c for c in reviews_by_movie.get(csv_name, [])
+            if c["sentiment"] == target_sentiment
+        ]
+        if len(candidates) < 1:
+            missing.append(
+                f"{csv_name}: no '{target_sentiment}' review found at or under "
+                f"{MAX_REVIEW_WORDS} words"
+            )
 
+    if missing:
+        raise ValueError(
+            "movie_data.py: cannot build MOVIES, missing review data:\n  "
+            + "\n  ".join(missing)
+        )
+
+
+def build_movies(seed: int = 42) -> list[dict]:
+    reviews_by_movie = load_reviews_by_movie()
+    _validate_reviews(reviews_by_movie)
+
+    rng = random.Random(seed)
     movies = []
-    for metadata, sentiments in zip(MOVIE_METADATA, sentiment_plan, strict=True):
-        reviews = []
-        for sentiment in sentiments:
-            excerpts = review_pool[sentiment][indices[sentiment]:indices[sentiment] + 2]
-            if len(excerpts) < 2:
-                excerpts = review_pool[sentiment][indices[sentiment]:]
-            indices[sentiment] += 2
-            if len(excerpts) == 1:
-                text = excerpts[0]
-            else:
-                text = f'Review excerpt 1: "{excerpts[0]}" Review excerpt 2: "{excerpts[1]}"'
-            text = truncate_words(text, limit=135)
-            reviews.append({"sentiment": sentiment, "text": text})
-        movies.append({**metadata, "reviews": reviews})
+
+    for metadata in MOVIE_METADATA:
+        csv_name = metadata["csv_name"]
+        target_sentiment = metadata["target_sentiment"]
+        candidates = [
+            c for c in reviews_by_movie[csv_name]
+            if c["sentiment"] == target_sentiment
+        ]
+
+        # Pick the longest available review of the target sentiment at or
+        # under MAX_REVIEW_WORDS, so each movie gets as full a review as
+        # possible within the cap. Ties are broken deterministically using
+        # the seeded RNG.
+        max_word_count = max(c["word_count"] for c in candidates)
+        longest_candidates = [c for c in candidates if c["word_count"] == max_word_count]
+        chosen = rng.choice(longest_candidates)
+
+        movie = {
+            "imdb_id": metadata.get("imdb_id", ""),
+            "set_group": metadata["set_group"],
+            "title": metadata["title"],
+            "year": metadata["year"],
+            "genre": metadata["genre"],
+            "poster_url": metadata["poster_url"],
+            "description": metadata["description"],
+            "review": {"sentiment": chosen["sentiment"], "text": chosen["text"]},
+        }
+        movies.append(movie)
+
     return movies
 
 

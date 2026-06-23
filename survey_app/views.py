@@ -225,23 +225,18 @@ def seed_movie_data() -> None:
                 "description": item["description"],
             },
         )
-        
+
         group_name = f"Set {item.get('set_group', 1)}"
         group, _ = Group.objects.get_or_create(name=group_name)
-        movie.target_groups.add(group)
-        
-        reviews = item["reviews"]
+        movie.target_groups.set([group])
+
+        review = item["review"]
         movie.reviews.all().delete()
-        Review.objects.bulk_create(
-            [
-                Review(
-                    movie=movie,
-                    source=review.get("source", "SST"),
-                    sentiment=review["sentiment"],
-                    text=review["text"],
-                )
-                for review in reviews
-            ]
+        Review.objects.create(
+            movie=movie,
+            source=review.get("source", "JUMR"),
+            sentiment=review["sentiment"],
+            text=review["text"],
         )
 
 
