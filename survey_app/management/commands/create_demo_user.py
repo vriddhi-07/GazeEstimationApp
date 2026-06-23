@@ -11,6 +11,10 @@ This creates:
 - A ParticipantSession with all onboarding already completed
 """
 
+import re
+from pathlib import Path
+
+import pytreebank
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
@@ -23,7 +27,85 @@ from survey_app.models import (
 )
 
 
+# ── PYTREEBANK-SOURCED DEMO REVIEW EXCERPTS ───────────────────────────────────
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+SST_PATH = BASE_DIR / "data" / "stanford_sentiment_treebank"
+MAX_DEMO_REVIEW_WORDS = 150
+MIN_DEMO_REVIEW_WORDS = 40
+
+
+def _normalize_text(text: str) -> str:
+    text = re.sub(r"\s+", " ", text).strip()
+    replacements = {
+        " n't": "n't", " 's": "'s", " 're": "'re", " 've": "'ve",
+        " 'm": "'m", " 'd": "'d", " 'll": "'ll", " ,": ",", " .": ".",
+        " !": "!", " ?": "?", " ;": ";", " :": ":", "( ": "(", " )": ")",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text
+
+
+def _is_complete_sentence(text: str) -> bool:
+    return text.endswith((".", "!", "?", ".'", "!'", "?'", "''"))
+
+
+def load_demo_review_pool() -> dict[str, list[str]]:
+    """
+    Load single, complete SST sentences (not stitched excerpts), bucketed
+    by sentiment, each at most MAX_DEMO_REVIEW_WORDS words long.
+    """
+    dataset = pytreebank.load_sst(path=str(SST_PATH))
+    pools = {"positive": [], "neutral": [], "negative": []}
+
+    for split_name in ("train", "dev", "test"):
+        for tree in dataset[split_name]:
+            text = _normalize_text(tree.to_lines()[0])
+            word_count = len(text.split())
+
+            if word_count < MIN_DEMO_REVIEW_WORDS or word_count > MAX_DEMO_REVIEW_WORDS:
+                continue
+            if text.startswith("..."):
+                continue
+            if not _is_complete_sentence(text):
+                continue
+
+            if tree.label >= 3:
+                sentiment = "positive"
+            elif tree.label == 2:
+                sentiment = "neutral"
+            else:
+                sentiment = "negative"
+
+            if text not in pools[sentiment]:
+                pools[sentiment].append(text)
+
+            if all(len(pools[s]) >= 10 for s in pools):
+                return pools
+
+    return pools
+
+
+def pick_demo_review(pool: dict[str, list[str]], sentiment: str, index: int) -> dict:
+    """
+    Deterministically pick the (index)th-longest available excerpt of the
+    given sentiment, so re-running the command always yields the same text.
+    """
+    candidates = sorted(pool[sentiment], key=len, reverse=True)
+    if not candidates:
+        raise ValueError(
+            f"create_demo_user: no '{sentiment}' excerpt available under "
+            f"{MAX_DEMO_REVIEW_WORDS} words. Widen MIN_DEMO_REVIEW_WORDS or "
+            f"check the SST dataset path."
+        )
+    chosen_text = candidates[index % len(candidates)]
+    return {"sentiment": sentiment, "text": chosen_text}
+
+
 # ── DUMMY MOVIES ──────────────────────────────────────────────────────────────
+# Each movie gets ONE pytreebank-sourced review excerpt (<=150 words).
+# "review_sentiment" picks which sentiment bucket that excerpt comes from.
 
 DEMO_MOVIES = [
     {
@@ -31,140 +113,45 @@ DEMO_MOVIES = [
         "title": "Stellar Voyage",
         "year": 2021,
         "genre": "Sci-Fi, Adventure",
-        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "poster_url": "/static/survey_app/posters/stellar_voyage.svg",
         "description": "A crew of astronauts embark on a daring journey beyond the known solar system.",
-        "reviews": [
-            {
-                "sentiment": "positive",
-                "text": (
-                    'Review excerpt 1: "A breathtaking ride through the cosmos that leaves you '
-                    'speechless and inspired." '
-                    'Review excerpt 2: "The visual effects are nothing short of spectacular, '
-                    'anchored by a deeply human story about courage and sacrifice."'
-                ),
-            },
-            {
-                "sentiment": "negative",
-                "text": (
-                    'Review excerpt 1: "Despite its ambitions, the film stumbles with a '
-                    'predictable plot and underdeveloped characters." '
-                    'Review excerpt 2: "The third act falls apart under the weight of its own '
-                    'sci-fi jargon, leaving audiences more confused than moved."'
-                ),
-            },
-        ],
+        "review_sentiment": "positive",
     },
     {
         "imdb_id": "demo_tt0002",
         "title": "The Quiet Shore",
         "year": 2019,
         "genre": "Drama, Romance",
-        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "poster_url": "/static/survey_app/posters/the_quiet_shore.svg",
         "description": "Two strangers meet at a coastal village and uncover a shared past.",
-        "reviews": [
-            {
-                "sentiment": "positive",
-                "text": (
-                    'Review excerpt 1: "A tender and quietly devastating film that lingers '
-                    'long after the credits roll." '
-                    'Review excerpt 2: "The performances are understated yet powerful, '
-                    'making every small moment feel profound and real."'
-                ),
-            },
-            {
-                "sentiment": "neutral",
-                "text": (
-                    'Review excerpt 1: "A pleasant watch that neither surprises nor '
-                    'disappoints, offering solid performances and gentle pacing." '
-                    'Review excerpt 2: "The story is familiar but told with enough warmth '
-                    'to keep you engaged through its modest runtime."'
-                ),
-            },
-        ],
+        "review_sentiment": "neutral",
     },
     {
         "imdb_id": "demo_tt0003",
         "title": "Iron Verdict",
         "year": 2022,
         "genre": "Thriller, Crime",
-        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "poster_url": "/static/survey_app/posters/iron_verdict.svg",
         "description": "A defence attorney discovers her client may be hiding a dark secret.",
-        "reviews": [
-            {
-                "sentiment": "positive",
-                "text": (
-                    'Review excerpt 1: "A gripping courtroom thriller that keeps you '
-                    'guessing right up to the final scene." '
-                    'Review excerpt 2: "Sharp writing and a powerhouse lead performance '
-                    'make this one of the best legal dramas in recent memory."'
-                ),
-            },
-            {
-                "sentiment": "negative",
-                "text": (
-                    'Review excerpt 1: "The twists feel manufactured rather than earned, '
-                    'and the villain is telegraphed far too early." '
-                    'Review excerpt 2: "A disappointingly hollow thriller that mistakes '
-                    'frantic pacing for genuine tension."'
-                ),
-            },
-        ],
+        "review_sentiment": "negative",
     },
     {
         "imdb_id": "demo_tt0004",
         "title": "Echoes of Tomorrow",
         "year": 2020,
         "genre": "Mystery, Drama",
-        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "poster_url": "/static/survey_app/posters/echoes_of_tomorrow.svg",
         "description": "A grieving musician begins receiving voice messages from a version of herself one year in the future.",
-        "reviews": [
-            {
-                "sentiment": "positive",
-                "text": (
-                    'Review excerpt 1: "A haunting and emotionally rich mystery that rewards '
-                    'patient viewers with a deeply satisfying resolution." '
-                    'Review excerpt 2: "The lead performance is extraordinary, carrying the '
-                    'film through its more demanding emotional stretches with quiet authority."'
-                ),
-            },
-            {
-                "sentiment": "neutral",
-                "text": (
-                    'Review excerpt 1: "An intriguing premise that is only partially realised, '
-                    'though the central performance keeps it compelling throughout." '
-                    'Review excerpt 2: "The pacing drags in the second act but the film '
-                    'recovers well enough to leave a lasting impression."'
-                ),
-            },
-        ],
+        "review_sentiment": "neutral",
     },
     {
         "imdb_id": "demo_tt0005",
         "title": "Burnout Boulevard",
         "year": 2023,
         "genre": "Comedy, Drama",
-        "poster_url": "/static/survey_app/posters/fallback.svg",
+        "poster_url": "/static/survey_app/posters/burnout_boulevard.svg",
         "description": "A burnt-out city planner quits her job and accidentally becomes the spokesperson for a neighbourhood rebellion.",
-        "reviews": [
-            {
-                "sentiment": "positive",
-                "text": (
-                    'Review excerpt 1: "A sharp and surprisingly warm comedy that finds '
-                    'real heart beneath its satirical surface." '
-                    'Review excerpt 2: "Witty, well-paced, and anchored by a magnetic '
-                    'lead performance that makes even the broadest jokes land."'
-                ),
-            },
-            {
-                "sentiment": "negative",
-                "text": (
-                    'Review excerpt 1: "The film mistakes busyness for energy, cramming '
-                    'in too many subplots at the expense of its most interesting characters." '
-                    'Review excerpt 2: "A promising setup that loses its nerve by the third '
-                    'act, settling for easy resolutions where genuine conflict was needed."'
-                ),
-            },
-        ],
+        "review_sentiment": "positive",
     },
 ]
 
@@ -238,7 +225,7 @@ DEMO_ARTICLES = [
 DEMO_DIAGRAMS = [
     {
         "slug": "demo-task-a-wordcloud",
-        "order":"1",
+        "order": "1",
         "title": "Demo Task A: Finance Word Cloud",
         "type": "wordcloud",
         "context": "Answer the questions using the word cloud",
@@ -258,7 +245,7 @@ DEMO_DIAGRAMS = [
     },
     {
         "slug": "demo-task-b-network",
-        "order":"2",
+        "order": "2",
         "title": "Demo Task B: Social Network",
         "type": "network",
         "context": "Answer the questions using the diagram",
@@ -278,7 +265,7 @@ DEMO_DIAGRAMS = [
     },
     {
         "slug": "demo-task-c-metromap",
-        "order":"3",
+        "order": "3",
         "title": "Demo Task C: Metro Map",
         "type": "metromap",
         "context": "Answer the questions using the map",
@@ -318,7 +305,6 @@ class Command(BaseCommand):
         user.groups.add(demo_group)
 
         # ── 3. Create or reset ParticipantSession with onboarding complete ───
-        ParticipantSession.objects.filter(user=user).delete()
         old_sessions = ParticipantSession.objects.filter(user=user)
         for old in old_sessions:
             old.movie_review_responses.all().delete()
@@ -331,7 +317,10 @@ class Command(BaseCommand):
         )
         self.stdout.write("Created demo user")
 
-        # ── 4. Seed demo movies ───────────────────────────────────────────────
+        # ── 4. Seed demo movies (one pytreebank excerpt each, <=150 words) ───
+        review_pool = load_demo_review_pool()
+        sentiment_counters = {"positive": 0, "neutral": 0, "negative": 0}
+
         for item in DEMO_MOVIES:
             movie, _ = Movie.objects.update_or_create(
                 imdb_id=item["imdb_id"],
@@ -343,18 +332,23 @@ class Command(BaseCommand):
                     "description": item["description"],
                 },
             )
-            movie.target_groups.add(demo_group)
+            movie.target_groups.set([demo_group])
+
+            sentiment = item["review_sentiment"]
+            review = pick_demo_review(review_pool, sentiment, sentiment_counters[sentiment])
+            sentiment_counters[sentiment] += 1
+
             movie.reviews.all().delete()
-            Review.objects.bulk_create([
-                Review(
-                    movie=movie,
-                    source="DEMO",
-                    sentiment=r["sentiment"],
-                    text=r["text"],
-                )
-                for r in item["reviews"]
-            ])
-            self.stdout.write(f"  Seeded movie: {item['title']}")
+            Review.objects.create(
+                movie=movie,
+                source="SST",
+                sentiment=review["sentiment"],
+                text=review["text"],
+            )
+            word_count = len(review["text"].split())
+            self.stdout.write(
+                f"  Seeded movie: {item['title']} [{sentiment}, {word_count} words]"
+            )
 
         # ── 5. Seed demo news articles ────────────────────────────────────────
         for item in DEMO_ARTICLES:
@@ -368,10 +362,9 @@ class Command(BaseCommand):
                     "is_fake": item["is_fake"],
                 },
             )
-            article.target_groups.add(demo_group)
+            article.target_groups.set([demo_group])
             self.stdout.write(f"  Seeded article: {item['headline'][:50]}")
 
-        # ── 6. Seed demo network diagrams ─────────────────────────────────────
         # ── 6. Seed demo network diagrams ─────────────────────────────────────
         # Remove any old demo diagrams whose slugs have changed
         current_slugs = {item["slug"] for item in DEMO_DIAGRAMS}
@@ -397,7 +390,7 @@ class Command(BaseCommand):
                     "question_two_options": item["question_two_options"],
                 },
             )
-            diagram.target_groups.add(demo_group)
+            diagram.target_groups.set([demo_group])
             self.stdout.write(f"  Seeded diagram: {item['title']}")
 
         self.stdout.write(self.style.SUCCESS(
@@ -405,5 +398,5 @@ class Command(BaseCommand):
             "  Username: demo\n"
             "  Password: demo1234\n"
             "  Onboarding: pre-completed, goes straight to Task 1\n"
-            "  Content: 3 movies, 3 articles, 3 diagrams (all Demo group only)\n"
+            "  Content: 5 movies, 3 articles, 3 diagrams (all Demo group only)\n"
         ))

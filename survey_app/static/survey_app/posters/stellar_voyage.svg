@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1080" viewBox="0 0 768 1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#000000"/>
+      <stop offset="100%" stop-color="#1b5e20"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="768" height="1080" fill="url(#bg)"/>
+
+  <text
+    x="384"
+    y="500"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="68"
+    fill="#b7ffaf">
+    STELLAR
+  </text>
+
+  <text
+    x="384"
+    y="585"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="68"
+    fill="#b7ffaf">
+    VOYAGE
+  </text>
+
+  <text
+    x="384"
+    y="685"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="42"
+    fill="#d6ffd1">
+    2021
+  </text>
+</svg>
