@@ -84,7 +84,7 @@
   }
 
   .slider-label-col .text {
-    font-size: 0.75rem; 
+    font-size: 0.90rem; 
     line-height: 1.15;
     padding: 0;
   }
@@ -129,7 +129,7 @@
         {% endif %} task.
       </p>
       
-      <h3 style="margin-top: 2rem;">Please rate your mental effort required to complete this task:</h3>
+      <!-- <h3 style="margin-top: 2rem;">Please rate your mental effort required to complete this task:</h3> -->
       
       <div class="paas-slider-container">
         <input type="range" min="1" max="9" step="1" class="paas-slider" id="paasSlider" name="paas_rating" value="{{ existing_rating|default:5 }}">
@@ -175,13 +175,13 @@
       </div>
 
       {% if difficulty_items %}
-        <h3 style="margin-top: 2.5rem;">Rate the difficulty of each task with respect to each other.</h3>
-        <p style="color: #666; margin-top: -0.5rem;">
+        <h3 style="margin-top: 2.5rem;font-size: 1.75rem;">Rate the relative difficulty of the sub-tasks.</h3>
+        <!-- <p style="color: #666; margin-top: -0.5rem;">
           {% if task_number == 1 %}Sentiment Analysis of:
           {% elif task_number == 2 %}Fake News Analysis of:
           {% elif task_number == 3 %}Visualization of:
           {% endif %}
-        </p>
+        </p> -->
 
         <div class="difficulty-items">
           {% for item in difficulty_items %}
@@ -216,7 +216,7 @@
       {% endif %}
     </div>
 
-    <button type="submit" class="btn">Submit Rating</button>
+    <button type="submit" class="btn paas-submit-btn">Submit Rating</button>
   </form>
 </section>
 
