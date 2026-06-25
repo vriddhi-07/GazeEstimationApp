@@ -422,6 +422,7 @@ class Command(BaseCommand):
                 defaults={
                     "order": item.get("order", 0),
                     "title": item["title"],
+                    "type": item["type"],
                     "context": item["context"],
                     "image_url": item.get("image_url", ""),
                     "image_alt": item.get("image_alt", ""),

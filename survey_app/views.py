@@ -277,6 +277,7 @@ def seed_network_data() -> None:
             defaults={
                 "order": item.get("order", 0),
                 "title": item["title"],
+                "type": item["type"],
                 "context": item["context"],
                 "image_url": item.get("image_url", ""),
                 "image_alt": item.get("image_alt", ""),
@@ -291,9 +292,12 @@ def seed_network_data() -> None:
             },
         )
 
+        # Link the diagram to exactly the correct Cohort Group,
+        # clearing any stale group links from previous seed runs.
         group_name = f"Set {item.get('set_group', 1)}"
         group, _ = Group.objects.get_or_create(name=group_name)
         diagram.target_groups.set([group])
+        
 def get_network_display_hints(slug: str) -> dict[str, str]:
     item = next((entry for entry in NETWORK_DIAGRAMS if entry["slug"] == slug), None)
     if not item:
