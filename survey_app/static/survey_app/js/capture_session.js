@@ -140,14 +140,26 @@
     }
   };
 
-  const handleStopMessage = async (payload) => {
-    if (payload?.type === "stop-capture-session") {
-      setStatus("Finalizing recordings…");
-      await stopAllRecorders();
-      if (openerWatchTimer) window.clearInterval(openerWatchTimer);
-      window.close();
+const handleStopMessage = async (payload) => {
+  if (payload?.type === "stop-capture-session") {
+    setStatus("Finalizing recordings…");
+
+    await stopAllRecorders();
+
+    console.log("Finished stopAllRecorders()");
+
+    if (openerWatchTimer) {
+      window.clearInterval(openerWatchTimer);
     }
-  };
+
+    console.log("Waiting 30 seconds before closing popup...");
+
+    setTimeout(() => {
+      console.log("Closing popup");
+      window.close();
+    }, 40000);   // 30 seconds
+  }
+};
 
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
