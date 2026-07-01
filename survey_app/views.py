@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import threading
 import time
+import logging
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Group
@@ -1109,74 +1110,72 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
     webm_fallback_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.webm"
     participant_id = participant.id
 
-    import logging
+    logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+    def _convert():
+        logger.info("========== Webcam finalize started ==========")
+        logger.info("Participant ID: %s", participant_id)
+        logger.info("Source: %s", webm_relative_path)
+        logger.info("Destination MP4: %s", mp4_relative_path)
 
-def _convert():
-    logger.info("========== Webcam finalize started ==========")
-    logger.info("Participant ID: %s", participant_id)
-    logger.info("Source: %s", webm_relative_path)
-    logger.info("Destination MP4: %s", mp4_relative_path)
+        try:
+            # Attempt MP4 conversion
+            converted_path = convert_webm_to_mp4(
+                webm_relative_path,
+                mp4_relative_path,
+            )
 
-    try:
-        # Attempt MP4 conversion
-        converted_path = convert_webm_to_mp4(
-            webm_relative_path,
-            mp4_relative_path,
-        )
+            logger.info("convert_webm_to_mp4() returned: %s", converted_path)
 
-        logger.info("convert_webm_to_mp4() returned: %s", converted_path)
+            if converted_path:
+                logger.info("MP4 conversion succeeded.")
+                remove_stale_partial_file(mp4_relative_path)
 
-        if converted_path:
-            logger.info("MP4 conversion succeeded.")
-            remove_stale_partial_file(mp4_relative_path)
+            else:
+                logger.warning("MP4 conversion failed. Falling back to WEBM.")
 
-        else:
-            logger.warning("MP4 conversion failed. Falling back to WEBM.")
+                src = Path(settings.MEDIA_ROOT) / webm_relative_path
+                dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
 
-            src = Path(settings.MEDIA_ROOT) / webm_relative_path
-            dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+                logger.info("Moving %s -> %s", src, dst)
 
-            logger.info("Moving %s -> %s", src, dst)
+                dst.parent.mkdir(parents=True, exist_ok=True)
 
-            dst.parent.mkdir(parents=True, exist_ok=True)
+                src.rename(dst)
 
-            src.rename(dst)
+                converted_path = webm_fallback_path
 
-            converted_path = webm_fallback_path
+                logger.info("Fallback WEBM move succeeded.")
 
-            logger.info("Fallback WEBM move succeeded.")
+            from .models import ParticipantSession, WebcamClip
 
-        from .models import ParticipantSession, WebcamClip
+            logger.info("Looking up ParticipantSession id=%s", participant_id)
 
-        logger.info("Looking up ParticipantSession id=%s", participant_id)
+            participant_session = ParticipantSession.objects.get(id=participant_id)
 
-        participant_session = ParticipantSession.objects.get(id=participant_id)
+            logger.info("ParticipantSession found: %s", participant_session)
 
-        logger.info("ParticipantSession found: %s", participant_session)
+            clip, created = WebcamClip.objects.get_or_create(
+                participant=participant_session,
+                clip=converted_path,
+            )
 
-        clip, created = WebcamClip.objects.get_or_create(
-            participant=participant_session,
-            clip=converted_path,
-        )
+            logger.info(
+                "WebcamClip %s (created=%s)",
+                clip.pk,
+                created,
+            )
 
-        logger.info(
-            "WebcamClip %s (created=%s)",
-            clip.pk,
-            created,
-        )
+            webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
 
-        webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
+            if webm_path.exists():
+                logger.info("Deleting temp file %s", webm_path)
+                webm_path.unlink()
 
-        if webm_path.exists():
-            logger.info("Deleting temp file %s", webm_path)
-            webm_path.unlink()
+            logger.info("========== Webcam finalize completed ==========")
 
-        logger.info("========== Webcam finalize completed ==========")
-
-    except Exception:
-        logger.exception("ERROR while finalizing webcam recording")
+        except Exception:
+            logger.exception("ERROR while finalizing webcam recording")
 
 
 @require_POST
