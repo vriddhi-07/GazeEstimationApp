@@ -183,7 +183,7 @@
 
   if (controlChannel) {
     heartbeatWatchTimer = window.setInterval(() => {
-      if (Date.now() - lastHeartbeatAt < 4500) return;
+      if (Date.now() - lastHeartbeatAt < 60000) return;
       void stopAllRecorders().finally(() => {
         if (openerWatchTimer) window.clearInterval(openerWatchTimer);
         if (heartbeatWatchTimer) window.clearInterval(heartbeatWatchTimer);
@@ -218,6 +218,7 @@
   };
 
   const startCaptureSession = async () => {
+    console.log("Starting capture");
     if (!window.isSecureContext) {
       setStatus(
         "Recording is unavailable on this address. Open the survey on localhost or HTTPS to allow screen and webcam access.",
@@ -248,6 +249,7 @@
     try {
       setStatus("Requesting screen-sharing access…");
       screenStream = await navigator.mediaDevices.getDisplayMedia({
+        
         video: {
           displaySurface: "monitor",
           selfBrowserSurface: "exclude",
