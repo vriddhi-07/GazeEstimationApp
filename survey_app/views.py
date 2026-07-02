@@ -33,6 +33,13 @@ from .models import (
 )
 from .movie_data import MOVIES
 from .news_data import NEWS_ARTICLES
+
+# This VM has limited CPU. Running multiple ffmpeg encodes at once causes
+# them to starve each other (each libx264 encode wants ~100-200% CPU), so
+# conversions that would normally take seconds end up taking many minutes
+# or hitting the timeout. Serialize them instead: only one ffmpeg process
+# runs at a time, others queue up and run once it's free.
+_FFMPEG_SEMAPHORE = threading.Semaphore(1)
 from .network_data import NETWORK_DIAGRAMS
 
 CONSENT_RUN_KEY = "consent_for_current_run"
@@ -169,32 +176,42 @@ def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None =
     last_error = ""
     for _ in range(3):
         try:
-            subprocess.run(
-                [
-                    "ffmpeg",
-                    "-y",
-                    "-loglevel",
-                    "error",
-                    "-i",
-                    str(src_path),
-                    "-c:v",
-                    "libx264",
-                    "-vf",
-                    "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-                    "-pix_fmt",
-                    "yuv420p",
-                    "-movflags",
-                    "+faststart",
-                    str(temp_dst_path),
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            with _FFMPEG_SEMAPHORE:
+                subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-y",
+                        "-loglevel",
+                        "error",
+                        "-i",
+                        str(src_path),
+                        "-c:v",
+                        "libx264",
+                        "-preset",
+                        "veryfast",
+                        "-vf",
+                        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-movflags",
+                        "+faststart",
+                        str(temp_dst_path),
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    stdin=subprocess.DEVNULL,
+                    timeout=180,
+                )
             temp_dst_path.replace(dst_path)
             return relative_mp4_path
         except FileNotFoundError:
             last_error = "ffmpeg executable not found"
+            break
+        except subprocess.TimeoutExpired:
+            last_error = "ffmpeg conversion timed out after 180s"
+            if temp_dst_path.exists():
+                temp_dst_path.unlink()
             break
         except subprocess.CalledProcessError as exc:
             last_error = exc.stderr or exc.stdout or "ffmpeg conversion failed"
