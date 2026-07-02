@@ -262,7 +262,9 @@ def log_recording_event(
     def _iso(ms: int | None) -> str | None:
         if ms is None:
             return None
-        return datetime.datetime.fromtimestamp(ms / 1000, tz=datetime.timezone.utc).isoformat()
+        utc_dt = datetime.datetime.fromtimestamp(ms / 1000, tz=datetime.timezone.utc)
+        local_dt = timezone.localtime(utc_dt)
+        return local_dt.isoformat()
 
     entry = {
         "event": f"{kind}_recording",
@@ -273,7 +275,7 @@ def log_recording_event(
         "ended_at_ms": ended_ms,
         "ended_at_iso": _iso(ended_ms),
         "duration_ms": (ended_ms - started_ms) if (started_ms and ended_ms) else None,
-        "server_finalize_received_at_iso": timezone.now().isoformat(),
+        "server_finalize_received_at_iso": timezone.localtime(timezone.now()).isoformat(),
     }
 
     RECORDING_LOG_DIR.mkdir(parents=True, exist_ok=True)
