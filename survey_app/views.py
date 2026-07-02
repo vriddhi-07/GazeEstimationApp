@@ -1196,35 +1196,42 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
     webm_fallback_path = f"screen_clips/screen-{participant.id}-{session_stamp}.webm"
     participant_id = participant.id
 
+    logger = logging.getLogger(__name__)
+
     def _convert():
-        converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
-        if converted_path:
-            remove_stale_partial_file(mp4_relative_path)
-        else:
-            src = Path(settings.MEDIA_ROOT) / webm_relative_path
-            dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                src.rename(dst)
-                converted_path = webm_fallback_path
-            except OSError:
-                import logging
-                logging.getLogger(__name__).error(
-                    "Could not move webm to fallback path: %s -> %s", src, dst
-                )
-                return
+        try:
+            converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
+            if converted_path:
+                remove_stale_partial_file(mp4_relative_path)
+            else:
+                src = Path(settings.MEDIA_ROOT) / webm_relative_path
+                dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    src.rename(dst)
+                    converted_path = webm_fallback_path
+                except OSError:
+                    logger.error(
+                        "Could not move webm to fallback path: %s -> %s", src, dst
+                    )
+                    return
 
-        from .models import ParticipantSession as _PS, ScreenClip as _SC
-        p = _PS.objects.filter(id=participant_id).first()
-        if p:
-            _SC.objects.get_or_create(participant=p, clip=converted_path)
+            from .models import ParticipantSession as _PS, ScreenClip as _SC
+            p = _PS.objects.filter(id=participant_id).first()
+            if p:
+                clip, created = _SC.objects.get_or_create(participant=p, clip=converted_path)
+                logger.info("ScreenClip %s (created=%s)", clip.pk, created)
+            else:
+                logger.error("ParticipantSession id=%s not found for screen clip", participant_id)
 
-        webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
-        if webm_path.exists():
-            try:
-                webm_path.unlink()
-            except OSError:
-                pass
+            webm_path = Path(settings.MEDIA_ROOT) / webm_relative_path
+            if webm_path.exists():
+                try:
+                    webm_path.unlink()
+                except OSError:
+                    pass
+        except Exception:
+            logger.exception("ERROR while finalizing screen recording")
 
     threading.Thread(target=_convert, daemon=True).start()
     return JsonResponse({"ok": True, "queued": True})

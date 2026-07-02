@@ -11,7 +11,25 @@ from .models import (
     PaasResponse
 )
 
-admin.site.register(ParticipantSession)
+class WebcamClipInline(admin.TabularInline):
+    model = WebcamClip
+    extra = 0
+    readonly_fields = ("clip", "created_at")
+    can_delete = False
+
+
+class ScreenClipInline(admin.TabularInline):
+    model = ScreenClip
+    extra = 0
+    readonly_fields = ("clip", "created_at")
+    can_delete = False
+
+
+@admin.register(ParticipantSession)
+class ParticipantSessionAdmin(admin.ModelAdmin):
+    inlines = [WebcamClipInline, ScreenClipInline]
+
+
 admin.site.register(Movie)
 admin.site.register(Review)
 admin.site.register(MovieSelection)
