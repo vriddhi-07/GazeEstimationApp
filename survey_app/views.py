@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 import logging
+import datetime
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Group
@@ -261,7 +262,7 @@ def log_recording_event(
     def _iso(ms: int | None) -> str | None:
         if ms is None:
             return None
-        return timezone.datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+        return datetime.datetime.fromtimestamp(ms / 1000, tz=datetime.timezone.utc).isoformat()
 
     entry = {
         "event": f"{kind}_recording",
