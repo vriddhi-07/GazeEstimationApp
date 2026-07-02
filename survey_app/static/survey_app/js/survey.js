@@ -162,30 +162,62 @@
     });
   }
 
-  if (shouldStartCapture && !sessionStorage.getItem("captureWindowStarted")) {
-    const captureWindow = window.open(
+  const showCaptureBlockedWarning = (openCaptureWindow) => {
+    if (document.getElementById("captureBlockedBanner")) return;
+
+    const banner = document.createElement("div");
+    banner.id = "captureBlockedBanner";
+    banner.style.cssText =
+      "position:fixed;top:0;left:0;right:0;z-index:99999;background:#b42318;" +
+      "color:#fff;padding:14px 20px;font-size:15px;font-family:sans-serif;" +
+      "text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);";
+    banner.innerHTML =
+      "⚠️ Recording did not start — your browser blocked the recording window. " +
+      "This session will NOT be recorded until you click below.&nbsp;" +
+      '<button id="captureRetryBtn" style="margin-left:10px;padding:6px 14px;' +
+      'font-size:14px;cursor:pointer;border:none;border-radius:4px;background:#fff;' +
+      'color:#b42318;font-weight:bold;">Enable recording</button>';
+    document.body.prepend(banner);
+
+    document.getElementById("captureRetryBtn").addEventListener("click", () => {
+      // This click is a genuine user gesture, so most browsers will allow
+      // window.open() here even though the automatic attempt was blocked.
+      const win = openCaptureWindow();
+      if (win) {
+        banner.remove();
+      } else {
+        banner.querySelector("button").textContent =
+          "Still blocked — check your browser's address bar for a blocked-popup icon, allow popups for this site, then click again.";
+      }
+    });
+  };
+
+  const openCaptureWindow = () =>
+    window.open(
       "/capture-session/",
       "surveyCaptureSession",
       "popup,width=460,height=340"
     );
+
+  if (shouldStartCapture && !sessionStorage.getItem("captureWindowStarted")) {
+    const captureWindow = openCaptureWindow();
     if (captureWindow) {
       sessionStorage.setItem("captureWindowStarted", "1");
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete("start_capture");
       window.history.replaceState({}, "", cleanUrl.toString());
+    } else {
+      showCaptureBlockedWarning(openCaptureWindow);
     }
   } else if (shouldStartCapture && sessionStorage.getItem("captureWindowStarted")) {
-    const captureWindow = window.open(
-      "/capture-session/",
-      "surveyCaptureSession",
-      "popup,width=460,height=340"
-    );
+    const captureWindow = openCaptureWindow();
     if (captureWindow) {
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete("start_capture");
       window.history.replaceState({}, "", cleanUrl.toString());
     } else {
       sessionStorage.removeItem("captureWindowStarted");
+      showCaptureBlockedWarning(openCaptureWindow);
     }
   }
 
