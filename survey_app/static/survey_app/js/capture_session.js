@@ -102,18 +102,39 @@
       }
     }
 
+    // Chunks must land on disk in the exact order MediaRecorder produced
+    // them, or the reassembled .webm has scrambled timestamps (the server
+    // just does destination.write() per request, so two in-flight uploads
+    // racing each other can append out of order). ondataavailable fires on
+    // a timer regardless of whether the previous chunk's upload finished,
+    // so we chain each upload off the previous one's promise instead of
+    // firing them independently — this recorder's chunks are always sent
+    // one-at-a-time, in order, and the next chunk's request isn't even
+    // opened until the last one is confirmed written server-side.
+    let uploadQueue = Promise.resolve();
+
     recorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) {
-        uploadClipChunk(event.data, endpoint, filenamePrefix);
+        const data = event.data;
+        uploadQueue = uploadQueue.then(() =>
+          uploadClipChunk(data, endpoint, filenamePrefix)
+        );
       }
     };
     let startedAt = null;
     recorder.onstop = () => {
       const endedAt = Date.now();
-      const finalizePromise = finalizeClip(finalizeEndpoint, startedAt, endedAt).finally(() => {
-        const idx = pendingFinalizations.indexOf(finalizePromise);
-        if (idx >= 0) pendingFinalizations.splice(idx, 1);
-      });
+      // Wait for every chunk we've queued (including one that may have just
+      // been queued by a final requestData() and hasn't started uploading
+      // yet) to actually land on disk before telling the server to convert —
+      // otherwise finalize can race ahead of the last chunk's upload.
+      const finalizePromise = uploadQueue
+        .catch(() => {})
+        .then(() => finalizeClip(finalizeEndpoint, startedAt, endedAt))
+        .finally(() => {
+          const idx = pendingFinalizations.indexOf(finalizePromise);
+          if (idx >= 0) pendingFinalizations.splice(idx, 1);
+        });
       pendingFinalizations.push(finalizePromise);
     };
     startedAt = Date.now();
