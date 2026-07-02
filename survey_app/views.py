@@ -189,7 +189,7 @@ def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None =
                         "-c:v",
                         "libx264",
                         "-preset",
-                        "veryfast",
+                        "ultrafast",
                         "-vf",
                         "scale=trunc(iw/2)*2:trunc(ih/2)*2",
                         "-pix_fmt",
@@ -202,7 +202,7 @@ def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None =
                     capture_output=True,
                     text=True,
                     stdin=subprocess.DEVNULL,
-                    timeout=180,
+                    timeout=420,
                 )
             temp_dst_path.replace(dst_path)
             return relative_mp4_path
@@ -210,7 +210,7 @@ def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None =
             last_error = "ffmpeg executable not found"
             break
         except subprocess.TimeoutExpired:
-            last_error = "ffmpeg conversion timed out after 180s"
+            last_error = "ffmpeg conversion timed out after 420s"
             if temp_dst_path.exists():
                 temp_dst_path.unlink()
             break
