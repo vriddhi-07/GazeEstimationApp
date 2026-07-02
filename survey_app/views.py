@@ -231,6 +231,56 @@ def remove_stale_partial_file(relative_mp4_path: str) -> None:
         temp_dst_path.unlink()
 
 
+RECORDING_LOG_DIR = Path(settings.BASE_DIR) / "recording_logs"
+
+
+def log_recording_event(
+    participant_id: int,
+    session_stamp: str,
+    kind: str,
+    started_at_ms: str | None,
+    ended_at_ms: str | None,
+) -> None:
+    """
+    Append one JSON line per finished clip to a per-participant log file, so
+    webcam/screen recording start & end times can be matched up against
+    RealEye's own timestamps during post-processing.
+
+    started_at_ms / ended_at_ms are epoch-millisecond timestamps captured in
+    the browser (Date.now()) at the moment MediaRecorder actually started
+    and stopped — these are the times that matter for sync, not when the
+    upload/finalize HTTP requests happened to arrive at the server.
+    """
+    try:
+        started_ms = int(started_at_ms) if started_at_ms else None
+        ended_ms = int(ended_at_ms) if ended_at_ms else None
+    except (TypeError, ValueError):
+        started_ms = None
+        ended_ms = None
+
+    def _iso(ms: int | None) -> str | None:
+        if ms is None:
+            return None
+        return timezone.datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+
+    entry = {
+        "event": f"{kind}_recording",
+        "participant_id": participant_id,
+        "session_stamp": session_stamp,
+        "started_at_ms": started_ms,
+        "started_at_iso": _iso(started_ms),
+        "ended_at_ms": ended_ms,
+        "ended_at_iso": _iso(ended_ms),
+        "duration_ms": (ended_ms - started_ms) if (started_ms and ended_ms) else None,
+        "server_finalize_received_at_iso": timezone.now().isoformat(),
+    }
+
+    RECORDING_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = RECORDING_LOG_DIR / f"participant_{participant_id}.log"
+    with log_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
 def seed_movie_data() -> None:
     for item in MOVIES:
         movie, _ = Movie.objects.update_or_create(
@@ -1122,10 +1172,15 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
     if not session_stamp:
         return JsonResponse({"ok": False, "error": "Missing session_stamp"}, status=400)
 
+    started_at = request.POST.get("started_at")
+    ended_at = request.POST.get("ended_at")
+
     webm_relative_path = f"tmp_recordings/webcam-{participant.id}-{session_stamp}.webm"
     mp4_relative_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.mp4"
     webm_fallback_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.webm"
     participant_id = participant.id
+
+    log_recording_event(participant_id, session_stamp, "webcam", started_at, ended_at)
 
     logger = logging.getLogger(__name__)
 
@@ -1208,10 +1263,15 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
     if not session_stamp:
         return JsonResponse({"ok": False, "error": "Missing session_stamp"}, status=400)
 
+    started_at = request.POST.get("started_at")
+    ended_at = request.POST.get("ended_at")
+
     webm_relative_path = f"tmp_recordings/screen-{participant.id}-{session_stamp}.webm"
     mp4_relative_path = f"screen_clips/screen-{participant.id}-{session_stamp}.mp4"
     webm_fallback_path = f"screen_clips/screen-{participant.id}-{session_stamp}.webm"
     participant_id = participant.id
+
+    log_recording_event(participant_id, session_stamp, "screen", started_at, ended_at)
 
     logger = logging.getLogger(__name__)
 

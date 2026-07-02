@@ -62,7 +62,7 @@
   // sendBeacon() cannot send custom headers, so the CSRF token is lost and
   // Django rejects the request with 403 Forbidden.  fetch() with keepalive:true
   // behaves similarly (survives page unload) but correctly carries the header.
-  const finalizeClip = async (endpoint) => {
+  const finalizeClip = async (endpoint, startedAt, endedAt) => {
     if (pendingUploads.size > 0) {
       await Promise.allSettled(Array.from(pendingUploads));
     }
@@ -71,6 +71,8 @@
     formData.append("session_stamp", String(sessionStamp));
     formData.append("participant_id", participantId);
     formData.append("csrfmiddlewaretoken", getCsrfToken());
+    if (startedAt) formData.append("started_at", String(startedAt));
+    if (endedAt) formData.append("ended_at", String(endedAt));
 
     await fetch(endpoint, {
       method: "POST",
@@ -105,13 +107,16 @@
         uploadClipChunk(event.data, endpoint, filenamePrefix);
       }
     };
+    let startedAt = null;
     recorder.onstop = () => {
-      const finalizePromise = finalizeClip(finalizeEndpoint).finally(() => {
+      const endedAt = Date.now();
+      const finalizePromise = finalizeClip(finalizeEndpoint, startedAt, endedAt).finally(() => {
         const idx = pendingFinalizations.indexOf(finalizePromise);
         if (idx >= 0) pendingFinalizations.splice(idx, 1);
       });
       pendingFinalizations.push(finalizePromise);
     };
+    startedAt = Date.now();
     recorder.start(3000);
     activeRecorders.push(recorder);
     activeStreams.push(stream);
