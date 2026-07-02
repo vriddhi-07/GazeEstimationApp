@@ -1177,6 +1177,9 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
         except Exception:
             logger.exception("ERROR while finalizing webcam recording")
 
+    threading.Thread(target=_convert, daemon=True).start()
+    return JsonResponse({"ok": True, "queued": True})
+
 
 @require_POST
 def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
@@ -1349,4 +1352,3 @@ def paas_evaluation_view(request: HttpRequest, task_number: int) -> HttpResponse
             "record_webcam": True,
         }
     )
-
