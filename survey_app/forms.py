@@ -7,7 +7,7 @@ EDUCATION_LEVEL_CHOICES = [
     ("bachelors", "Bachelor's degree"),
     ("masters", "Master's degree"),
     ("doctorate", "Doctorate"),
-    ("postdoctorate","Post-Doctorate")
+    ("postdoctorate","Post-Doctorate"),
     ("other", "Other"),
 ]
 
