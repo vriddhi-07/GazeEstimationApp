@@ -126,8 +126,13 @@ def get_active_review_text(request: HttpRequest, movie: Movie) -> str:
 # Rather than resizing text dynamically per page-load (which would itself
 # vary the stimulus and could confound fixation/AOI data), bucket into a
 # small number of fixed, reproducible size tiers by word count.
-REVIEW_TEXT_SHORT_MAX_WORDS = 20
-REVIEW_TEXT_LONG_MIN_WORDS = 45
+#
+# NOTE: production reviews (movie_data.py / jumr_reviews.csv) actually
+# range ~80-148 words, clustered near the top of that range, not the wide
+# short-clause-to-paragraph spread of raw SST sentences. Thresholds below
+# are calibrated to that real distribution.
+REVIEW_TEXT_SHORT_MAX_WORDS = 90
+REVIEW_TEXT_LONG_MIN_WORDS = 115
 
 
 def get_review_text_size_class(review_text: str) -> str:
