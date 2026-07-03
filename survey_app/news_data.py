@@ -33,6 +33,15 @@ def load_bodies() -> dict[str, str]:
             for row in reader
         }
 
+# (headline, body_id) pairs to skip even though they pass the word-count
+# filter — e.g. articles that are technically >=60 words but still read as
+# visual outliers next to the other stimuli. Keeping this as an explicit
+# exclusion (rather than raising MIN_WORDS) avoids reshuffling every other
+# article's selection.
+EXCLUDED_PAIRS = {
+    ("ISIL Beheads American Photojournalist in Iraq", "608"),
+}
+
 def build_news_articles() -> list[dict]:
     bodies = load_bodies()
     
@@ -61,7 +70,7 @@ def build_news_articles() -> list[dict]:
                 continue
             
             pair = (headline, body_id)
-            if pair in used_pairs:
+            if pair in used_pairs or pair in EXCLUDED_PAIRS:
                 continue
 
             used_pairs.add(pair)
