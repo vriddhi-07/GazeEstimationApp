@@ -40,6 +40,7 @@ def load_bodies() -> dict[str, str]:
 # article's selection.
 EXCLUDED_PAIRS = {
     ("ISIL Beheads American Photojournalist in Iraq", "608"),
+    ("Report: Christian Bale Just Bailed on the Steve Jobs Movie", "1157"),
 }
 
 def build_news_articles() -> list[dict]:
