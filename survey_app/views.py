@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from .forms import ConsentForm, DemographicForm, MediaPreferencesForm, ReadingHabitsForm
+from .forms import ConsentForm, DemographicForm
 from .models import (
     Movie,
     MovieReviewResponse,
@@ -72,10 +72,6 @@ def get_onboarding_redirect(participant: ParticipantSession, request: HttpReques
         return "survey_app:consent"
     if not participant.demographics_completed_at:
         return "survey_app:demographics"
-    if not participant.reads_words_daily or participant.reads_news_daily is None:
-        return "survey_app:habits"
-    if not participant.reading_habits_completed_at or not request.session.get(CONSENT_RUN_KEY, False):
-        return "survey_app:media_preferences"
     if not participant.expertise_completed_at:          # ← ADD THIS BLOCK
         return "survey_app:expertise_rating"
     return None
@@ -473,7 +469,7 @@ def demographics_view(request: HttpRequest) -> HttpResponse:
     if not participant.consent_given:
         return redirect("survey_app:consent")
     if participant.demographics_completed_at:
-        return redirect("survey_app:habits")
+        return redirect("survey_app:expertise_rating")
 
     if request.method == "POST":
         form = DemographicForm(request.POST)
@@ -492,7 +488,7 @@ def demographics_view(request: HttpRequest) -> HttpResponse:
                     "demographics_completed_at",
                 ]
             )
-            return redirect("survey_app:habits")
+            return redirect("survey_app:expertise_rating")
     else:
         form = DemographicForm(
             initial={
@@ -516,91 +512,6 @@ def demographics_view(request: HttpRequest) -> HttpResponse:
     )
 
 
-@require_http_methods(["GET", "POST"])
-def reading_habits_view(request: HttpRequest) -> HttpResponse:
-    participant = get_or_create_participant(request)
-    if not participant.consent_given:
-        return redirect("survey_app:consent")
-    if not participant.demographics_completed_at:
-        return redirect("survey_app:demographics")
-    if participant.reads_words_daily and participant.reads_news_daily is not None:
-        return redirect("survey_app:media_preferences")
-
-    if request.method == "POST":
-        form = ReadingHabitsForm(request.POST)
-        if form.is_valid():
-            participant.reads_words_daily = form.cleaned_data["reads_words_daily"]
-            participant.reads_news_daily = form.cleaned_data["reads_news_daily"] == "yes"
-            participant.save(
-                update_fields=[
-                    "reads_words_daily",
-                    "reads_news_daily",
-                ]
-            )
-            return redirect("survey_app:media_preferences")
-    else:
-        form = ReadingHabitsForm(
-            initial={
-                "reads_words_daily": participant.reads_words_daily,
-                "reads_news_daily": "yes" if participant.reads_news_daily else "no" if participant.reads_news_daily is False else "",
-            }
-        )
-
-    return render(
-        request,
-        "survey_app/reading_habits.html",
-        {
-            "form": form,
-            "record_webcam": False,
-            "load_survey_js": True,
-        },
-    )
-
-
-@require_http_methods(["GET", "POST"])
-def media_preferences_view(request: HttpRequest) -> HttpResponse:
-    participant = get_or_create_participant(request)
-    if not participant.consent_given:
-        return redirect("survey_app:consent")
-    if not participant.demographics_completed_at:
-        return redirect("survey_app:demographics")
-    if not participant.reads_words_daily or participant.reads_news_daily is None:
-        return redirect("survey_app:habits")
-    if participant.reading_habits_completed_at and request.session.get(CONSENT_RUN_KEY, False):
-        return redirect("/movies/")
-
-    if request.method == "POST":
-        form = MediaPreferencesForm(request.POST)
-        if form.is_valid():
-            participant.movies_per_week = form.cleaned_data["movies_per_week"]
-            participant.picture_statement_agreement = form.cleaned_data["picture_statement_agreement"]
-            participant.reading_habits_completed_at = timezone.now()
-            participant.save(
-                update_fields=[
-                    "movies_per_week",
-                    "picture_statement_agreement",
-                    "reading_habits_completed_at",
-                ]
-            )
-            request.session[CONSENT_RUN_KEY] = True
-            return redirect("/movies/")
-    else:
-        form = MediaPreferencesForm(
-            initial={
-                "movies_per_week": participant.movies_per_week,
-                "picture_statement_agreement": participant.picture_statement_agreement,
-            }
-        )
-
-    return render(
-        request,
-        "survey_app/media_preferences.html",
-        {
-            "form": form,
-            "record_webcam": False,
-            "load_survey_js": True,
-        },
-    )
 from .forms import ExpertiseRatingForm  # add to your existing forms import line
  
 @login_required
@@ -609,8 +520,6 @@ def expertise_rating_view(request: HttpRequest) -> HttpResponse:
  
     if not participant.demographics_completed_at:
         return redirect("survey_app:demographics")
-    if not participant.reading_habits_completed_at:
-        return redirect("survey_app:media_preferences")
     if participant.expertise_completed_at:
         return redirect("survey_app:carousel")
  

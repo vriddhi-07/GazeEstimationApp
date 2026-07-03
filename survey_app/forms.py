@@ -17,30 +17,6 @@ GENDER_CHOICES = [
     ("prefer_not_to_say", "Prefer not to say"),
 ]
 
-WORDS_READ_DAILY_CHOICES = [
-    ("under_500", "Under 500 words"),
-    ("500_1000", "500 to 1,000 words"),
-    ("1000_3000", "1,000 to 3,000 words"),
-    ("3000_5000", "3,000 to 5,000 words"),
-    ("over_5000", "More than 5,000 words"),
-]
-
-MOVIES_PER_WEEK_CHOICES = [
-    ("0", "0"),
-    ("1", "1"),
-    ("2_3", "2 to 3"),
-    ("4_5", "4 to 5"),
-    ("6_plus", "6 or more"),
-]
-
-AGREEMENT_CHOICES = [
-    ("strongly_agree", "Strongly agree"),
-    ("agree", "Agree"),
-    ("neutral", "Neither agree nor disagree"),
-    ("disagree", "Disagree"),
-    ("strongly_disagree", "Strongly disagree"),
-]
-
 PROFESSION_CHOICES = [
     ("", "Select profession"),
     ("student", "Student"),
@@ -72,29 +48,6 @@ class DemographicForm(forms.Form):
     )
     gender = forms.ChoiceField(choices=GENDER_CHOICES, label="Gender")
 
-
-class ReadingHabitsForm(forms.Form):
-    reads_words_daily = forms.ChoiceField(
-        choices=WORDS_READ_DAILY_CHOICES,
-        widget=forms.RadioSelect,
-        label="How many words do you read every day?",
-    )
-    reads_news_daily = forms.ChoiceField(
-        choices=[("yes", "Yes"), ("no", "No")],
-        widget=forms.RadioSelect,
-        label="Do you read news every day?",
-    )
-class MediaPreferencesForm(forms.Form):
-    movies_per_week = forms.ChoiceField(
-        choices=MOVIES_PER_WEEK_CHOICES,
-        widget=forms.RadioSelect,
-        label="How many movies do you watch in a typical week?",
-    )
-    picture_statement_agreement = forms.ChoiceField(
-        choices=AGREEMENT_CHOICES,
-        widget=forms.RadioSelect,
-        label='“A picture is worth a thousand words.” Do you agree or disagree?',
-    )
 
 from django import forms
  
