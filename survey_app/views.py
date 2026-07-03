@@ -121,6 +121,24 @@ def get_active_review_text(request: HttpRequest, movie: Movie) -> str:
     return review_text
 
 
+# SST review snippets vary a lot in length (short clause vs. full sentence),
+# but the review box is a fixed size and the font-size is a fixed clamp().
+# Rather than resizing text dynamically per page-load (which would itself
+# vary the stimulus and could confound fixation/AOI data), bucket into a
+# small number of fixed, reproducible size tiers by word count.
+REVIEW_TEXT_SHORT_MAX_WORDS = 20
+REVIEW_TEXT_LONG_MIN_WORDS = 45
+
+
+def get_review_text_size_class(review_text: str) -> str:
+    word_count = len(review_text.split())
+    if word_count <= REVIEW_TEXT_SHORT_MAX_WORDS:
+        return "large"
+    if word_count >= REVIEW_TEXT_LONG_MIN_WORDS:
+        return "small"
+    return ""
+
+
 def get_active_article_body(request: HttpRequest, article: NewsArticle) -> str:
     active_article = request.session.get(ACTIVE_ARTICLE_SESSION_KEY, {})
     if active_article.get("article_id") == article.id and active_article.get("body"):
@@ -646,6 +664,7 @@ def movie_detail_view(request: HttpRequest, movie_id: int) -> HttpResponse:
         {
             "movie": movie,
             "review_text": review_text,
+            "review_text_size_class": get_review_text_size_class(review_text),
             "record_webcam": True,
         },
     )
