@@ -10,8 +10,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Group
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -63,6 +64,55 @@ def get_recording_participant(request: HttpRequest) -> ParticipantSession:
         if participant:
             return participant
     return get_or_create_participant(request)
+
+
+def participant_file_label(participant: ParticipantSession) -> str:
+    """
+    Human-readable identifier used in recording log and clip filenames:
+    "<username>_<db_id>", e.g. "5_293". The username lets you eyeball which
+    of the 12 real participant accounts a file belongs to; the db id is kept
+    so it still lines up 1:1 with the ParticipantSession row. Falls back to
+    "anon_<db_id>" for sessions with no linked user (e.g. demo walkthroughs).
+    """
+    username = participant.user.username if participant.user else "anon"
+    return f"{username}_{participant.id}"
+
+
+@staff_member_required
+def download_clip_view(request: HttpRequest, kind: str, clip_id: int) -> HttpResponse:
+    """
+    Forces an actual file download of a webcam/screen clip, for two reasons:
+
+    1. Django only serves /media/ URLs at all when DEBUG=True (see urls.py).
+       In production (DEBUG=False, the normal state on the deployed VM),
+       clicking a clip link in the admin 404s with nothing serving the file.
+    2. Even when /media/ is reachable, Django doesn't set a
+       Content-Disposition header, so the browser just plays the video
+       inline instead of prompting to save it.
+
+    This view works regardless of DEBUG and always attaches, so "download"
+    actually downloads. Restricted to staff (admin) users only.
+    """
+    if kind == "webcam":
+        clip = get_object_or_404(WebcamClip, id=clip_id)
+    elif kind == "screen":
+        clip = get_object_or_404(ScreenClip, id=clip_id)
+    else:
+        raise Http404("Unknown clip type")
+
+    if not clip.clip:
+        raise Http404("No file attached to this clip")
+
+    file_path = Path(settings.MEDIA_ROOT) / clip.clip.name
+    if not file_path.exists():
+        raise Http404("Clip file is missing on disk")
+
+    download_name = Path(clip.clip.name).name
+    return FileResponse(
+        open(file_path, "rb"),
+        as_attachment=True,
+        filename=download_name,
+    )
 
 
 def get_onboarding_redirect(participant: ParticipantSession, request: HttpRequest) -> str | None:
@@ -164,13 +214,24 @@ def append_chunk_to_media_file(uploaded_clip, relative_path: str) -> None:
             destination.write(chunk)
 
 
-def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None = None) -> str | None:
-    src_path = Path(settings.MEDIA_ROOT) / relative_webm_path
-    if relative_mp4_path is None:
-        relative_mp4_path = str(Path(relative_webm_path).with_suffix(".mp4"))
-    dst_path = Path(settings.MEDIA_ROOT) / relative_mp4_path
+def finalize_webm_recording(relative_src_path: str, relative_dst_path: str) -> str | None:
+    """
+    MediaRecorder-produced webm blobs are written as an unfinalized/"live"
+    stream: no Duration element and no Cues (seek index) in the container,
+    which is why playing one back shows the duration climbing as it plays
+    and dragging the scrubber does nothing.
+
+    Re-encoding to mp4 (the old approach) incidentally fixed this because
+    ffmpeg rebuilds the whole container, but a full libx264 re-encode is
+    the expensive part and isn't actually needed just to fix the container.
+    `-c copy` remuxes the existing video/audio streams as-is (no decode/
+    encode at all) while letting ffmpeg rewrite the webm container with a
+    proper Duration + Cues index — same fix, a fraction of the CPU cost.
+    """
+    src_path = Path(settings.MEDIA_ROOT) / relative_src_path
+    dst_path = Path(settings.MEDIA_ROOT) / relative_dst_path
     dst_path.parent.mkdir(parents=True, exist_ok=True)
-    temp_dst_path = dst_path.with_suffix(".part.mp4")
+    temp_dst_path = dst_path.with_suffix(".part.webm")
     if temp_dst_path.exists():
         temp_dst_path.unlink()
 
@@ -205,48 +266,40 @@ def convert_webm_to_mp4(relative_webm_path: str, relative_mp4_path: str | None =
                         "error",
                         "-i",
                         str(src_path),
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "ultrafast",
-                        "-vf",
-                        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-                        "-pix_fmt",
-                        "yuv420p",
-                        "-movflags",
-                        "+faststart",
+                        "-c",
+                        "copy",
                         str(temp_dst_path),
                     ],
                     check=True,
                     capture_output=True,
                     text=True,
                     stdin=subprocess.DEVNULL,
-                    timeout=420,
+                    timeout=60,
                 )
             temp_dst_path.replace(dst_path)
-            return relative_mp4_path
+            return relative_dst_path
         except FileNotFoundError:
             last_error = "ffmpeg executable not found"
             break
         except subprocess.TimeoutExpired:
-            last_error = "ffmpeg conversion timed out after 420s"
+            last_error = "ffmpeg remux timed out after 60s"
             if temp_dst_path.exists():
                 temp_dst_path.unlink()
             break
         except subprocess.CalledProcessError as exc:
-            last_error = exc.stderr or exc.stdout or "ffmpeg conversion failed"
+            last_error = exc.stderr or exc.stdout or "ffmpeg remux failed"
             if temp_dst_path.exists():
                 temp_dst_path.unlink()
             time.sleep(1)
 
     error_log_path = dst_path.with_suffix(".ffmpeg.log")
-    error_log_path.write_text(last_error or "ffmpeg conversion failed")
+    error_log_path.write_text(last_error or "ffmpeg remux failed")
     return None
 
 
-def remove_stale_partial_file(relative_mp4_path: str) -> None:
-    dst_path = Path(settings.MEDIA_ROOT) / relative_mp4_path
-    temp_dst_path = dst_path.with_suffix(".part.mp4")
+def remove_stale_partial_file(relative_dst_path: str) -> None:
+    dst_path = Path(settings.MEDIA_ROOT) / relative_dst_path
+    temp_dst_path = dst_path.with_suffix(".part.webm")
     if temp_dst_path.exists():
         temp_dst_path.unlink()
 
@@ -255,7 +308,7 @@ RECORDING_LOG_DIR = Path(settings.BASE_DIR) / "recording_logs"
 
 
 def log_recording_event(
-    participant_id: int,
+    participant: ParticipantSession,
     session_stamp: str,
     kind: str,
     started_at_ms: str | None,
@@ -285,9 +338,11 @@ def log_recording_event(
         local_dt = timezone.localtime(utc_dt)
         return local_dt.isoformat()
 
+    participant_id = participant.id
     entry = {
         "event": f"{kind}_recording",
         "participant_id": participant_id,
+        "username": participant.user.username if participant.user else None,
         "session_stamp": session_stamp,
         "started_at_ms": started_ms,
         "started_at_iso": _iso(started_ms),
@@ -297,8 +352,14 @@ def log_recording_event(
         "server_finalize_received_at_iso": timezone.localtime(timezone.now()).isoformat(),
     }
 
+    # File names use the human-readable username (e.g. "5") plus the raw DB
+    # id (which the clip filenames in tmp_recordings/ and webcam_clips/ /
+    # screen_clips/ also use), so it's easy to eyeball which participant a
+    # log belongs to while still being able to cross-reference by id.
+    log_filename = f"participant_{participant_file_label(participant)}.log"
+
     RECORDING_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = RECORDING_LOG_DIR / f"participant_{participant_id}.log"
+    log_path = RECORDING_LOG_DIR / log_filename
     with log_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
@@ -1077,7 +1138,7 @@ def upload_webcam_clip(request: HttpRequest) -> HttpResponse:
     if clip is None or not session_stamp:
         return JsonResponse({"ok": False, "error": "Missing clip"}, status=400)
 
-    temp_relative_path = f"tmp_recordings/webcam-{participant.id}-{session_stamp}.webm"
+    temp_relative_path = f"tmp_recordings/webcam-{participant_file_label(participant)}-{session_stamp}.webm"
     append_chunk_to_media_file(clip, temp_relative_path)
     return JsonResponse({"ok": True})
 
@@ -1093,7 +1154,7 @@ def upload_screen_clip(request: HttpRequest) -> HttpResponse:
     if clip is None or not session_stamp:
         return JsonResponse({"ok": False, "error": "Missing clip"}, status=400)
 
-    temp_relative_path = f"tmp_recordings/screen-{participant.id}-{session_stamp}.webm"
+    temp_relative_path = f"tmp_recordings/screen-{participant_file_label(participant)}-{session_stamp}.webm"
     append_chunk_to_media_file(clip, temp_relative_path)
     return JsonResponse({"ok": True})
 
@@ -1111,12 +1172,11 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
     started_at = request.POST.get("started_at")
     ended_at = request.POST.get("ended_at")
 
-    webm_relative_path = f"tmp_recordings/webcam-{participant.id}-{session_stamp}.webm"
-    mp4_relative_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.mp4"
-    webm_fallback_path = f"webcam_clips/webcam-{participant.id}-{session_stamp}.webm"
+    webm_relative_path = f"tmp_recordings/webcam-{participant_file_label(participant)}-{session_stamp}.webm"
+    final_relative_path = f"webcam_clips/webcam-{participant_file_label(participant)}-{session_stamp}.webm"
     participant_id = participant.id
 
-    log_recording_event(participant_id, session_stamp, "webcam", started_at, ended_at)
+    log_recording_event(participant, session_stamp, "webcam", started_at, ended_at)
 
     logger = logging.getLogger(__name__)
 
@@ -1124,26 +1184,29 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
         logger.info("========== Webcam finalize started ==========")
         logger.info("Participant ID: %s", participant_id)
         logger.info("Source: %s", webm_relative_path)
-        logger.info("Destination MP4: %s", mp4_relative_path)
+        logger.info("Destination: %s", final_relative_path)
 
         try:
-            # Attempt MP4 conversion
-            converted_path = convert_webm_to_mp4(
+            # Remux (not re-encode) to fix MediaRecorder's unfinalized
+            # container (no duration/seek index). Falls back to a plain
+            # file move if ffmpeg is unavailable or the remux fails, so the
+            # recording is never lost even if seeking stays broken.
+            converted_path = finalize_webm_recording(
                 webm_relative_path,
-                mp4_relative_path,
+                final_relative_path,
             )
 
-            logger.info("convert_webm_to_mp4() returned: %s", converted_path)
+            logger.info("finalize_webm_recording() returned: %s", converted_path)
 
             if converted_path:
-                logger.info("MP4 conversion succeeded.")
-                remove_stale_partial_file(mp4_relative_path)
+                logger.info("Remux succeeded.")
+                remove_stale_partial_file(final_relative_path)
 
             else:
-                logger.warning("MP4 conversion failed. Falling back to WEBM.")
+                logger.warning("Remux failed. Falling back to a plain file move.")
 
                 src = Path(settings.MEDIA_ROOT) / webm_relative_path
-                dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+                dst = Path(settings.MEDIA_ROOT) / final_relative_path
 
                 logger.info("Moving %s -> %s", src, dst)
 
@@ -1151,9 +1214,9 @@ def finalize_webcam_clip(request: HttpRequest) -> HttpResponse:
 
                 src.rename(dst)
 
-                converted_path = webm_fallback_path
+                converted_path = final_relative_path
 
-                logger.info("Fallback WEBM move succeeded.")
+                logger.info("Fallback move succeeded.")
 
             from .models import ParticipantSession, WebcamClip
 
@@ -1202,27 +1265,26 @@ def finalize_screen_clip(request: HttpRequest) -> HttpResponse:
     started_at = request.POST.get("started_at")
     ended_at = request.POST.get("ended_at")
 
-    webm_relative_path = f"tmp_recordings/screen-{participant.id}-{session_stamp}.webm"
-    mp4_relative_path = f"screen_clips/screen-{participant.id}-{session_stamp}.mp4"
-    webm_fallback_path = f"screen_clips/screen-{participant.id}-{session_stamp}.webm"
+    webm_relative_path = f"tmp_recordings/screen-{participant_file_label(participant)}-{session_stamp}.webm"
+    final_relative_path = f"screen_clips/screen-{participant_file_label(participant)}-{session_stamp}.webm"
     participant_id = participant.id
 
-    log_recording_event(participant_id, session_stamp, "screen", started_at, ended_at)
+    log_recording_event(participant, session_stamp, "screen", started_at, ended_at)
 
     logger = logging.getLogger(__name__)
 
     def _convert():
         try:
-            converted_path = convert_webm_to_mp4(webm_relative_path, mp4_relative_path)
+            converted_path = finalize_webm_recording(webm_relative_path, final_relative_path)
             if converted_path:
-                remove_stale_partial_file(mp4_relative_path)
+                remove_stale_partial_file(final_relative_path)
             else:
                 src = Path(settings.MEDIA_ROOT) / webm_relative_path
-                dst = Path(settings.MEDIA_ROOT) / webm_fallback_path
+                dst = Path(settings.MEDIA_ROOT) / final_relative_path
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     src.rename(dst)
-                    converted_path = webm_fallback_path
+                    converted_path = final_relative_path
                 except OSError:
                     logger.error(
                         "Could not move webm to fallback path: %s -> %s", src, dst

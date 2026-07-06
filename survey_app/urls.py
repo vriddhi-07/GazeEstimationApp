@@ -29,4 +29,5 @@ urlpatterns = [
     path("api/screen/upload/", views.upload_screen_clip, name="upload_screen_clip"),
     path("api/screen/finalize/", views.finalize_screen_clip, name="finalize_screen_clip"),
     path("paas/<int:task_number>/", views.paas_evaluation_view, name="paas_evaluation"),
+    path("admin-download-clip/<str:kind>/<int:clip_id>/", views.download_clip_view, name="download_clip"),
 ]

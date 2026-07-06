@@ -84,12 +84,15 @@
     });
   };
 
-  const startRecorder = (stream, endpoint, finalizeEndpoint, filenamePrefix) => {
+  const startRecorder = (stream, endpoint, finalizeEndpoint, filenamePrefix, videoBitsPerSecond) => {
     if (typeof MediaRecorder === "undefined") return null;
+
+    const options = { mimeType: "video/webm" };
+    if (videoBitsPerSecond) options.videoBitsPerSecond = videoBitsPerSecond;
 
     let recorder;
     try {
-      recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      recorder = new MediaRecorder(stream, options);
     } catch (err) {
       try {
         recorder = new MediaRecorder(stream);
@@ -236,7 +239,17 @@ const handleStopMessage = async (payload) => {
   };
 
   const getPreferredWebcamConstraints = async () => {
-    const fallback = { width: { ideal: 1280 }, height: { ideal: 720 } };
+    // Lenovo 300 FHD (the lab's webcam) maxes out at 1920x1080 @ 30fps —
+    // request that directly rather than 720p, since the mentor wants the
+    // best resolution available and eye-region detail benefits from every
+    // extra pixel. "ideal" (not "exact"/min) so a different/lower-spec
+    // webcam on another machine still falls back gracefully instead of
+    // failing getUserMedia outright.
+    const fallback = {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      frameRate: { ideal: 30 },
+    };
     if (!navigator.mediaDevices?.enumerateDevices) return fallback;
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -246,7 +259,11 @@ const handleStopMessage = async (payload) => {
         videoInputs.find((d) =>
           /external|usb|logi|webcam|camera/i.test(d.label)
         ) || videoInputs[0];
-      const constraints = { width: { ideal: 1280 }, height: { ideal: 720 } };
+      const constraints = {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 30 },
+      };
       if (preferred.deviceId) constraints.deviceId = { ideal: preferred.deviceId };
       return constraints;
     } catch (err) {
@@ -333,11 +350,18 @@ const handleStopMessage = async (payload) => {
     }
 
     // Start webcam recorder (always present).
+    // Explicit bitrate: left unset, browsers pick a generic default tuned
+    // for talking-head video calls, not for preserving fine detail in a
+    // small region of the frame (the eyes). 8 Mbps is a generous rate for
+    // 1080p30 and gives the encoder much more headroom for eye/eyelid
+    // detail. This only affects the participant's browser (encoding happens
+    // client-side) — it adds no CPU load on the VM, only larger file sizes.
     const webcamRecorder = startRecorder(
       webcamStream,
       "/api/webcam/upload/",
       "/api/webcam/finalize/",
-      "webcam-clip"
+      "webcam-clip",
+      8_000_000
     );
 
     if (!webcamRecorder) {
