@@ -1,7 +1,7 @@
 NETWORK_DIAGRAMS = [
     # --- SET 1 ---
     {
-        "slug": "marketing-technology-network",
+        "slug": "suspect-witness-network",
         "set_group": 1,
         "title": "Task 3A: Network Diagram 1",
         "type": "network",
@@ -89,7 +89,7 @@ NETWORK_DIAGRAMS = [
         "question_two_options": ["Rivers", "Flora", "Insects", "Ocean"],
     },
     {
-        "slug": "health-word-cloud",
+        "slug": "employee-word-cloud",
         "set_group": 2,
         "title": "Task 3E: Word Cloud 2",
         "type": "wordcloud",
@@ -110,7 +110,7 @@ NETWORK_DIAGRAMS = [
         "question_two_options": ["Agriculture", "Space Exploration", "Equality", "Ocean Life"],
     },
     {
-        "slug": "business-word-cloud",
+        "slug": "education-word-cloud",
         "set_group": 3,
         "title": "Task 3F: Word Cloud 3",
         "type": "wordcloud",
