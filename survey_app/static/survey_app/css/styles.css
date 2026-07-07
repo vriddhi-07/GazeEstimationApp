@@ -1229,10 +1229,21 @@ h1 { margin-top: 0; }
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
 }
 
-/* Image itself: fill the shell completely */
+/* Image itself: fill the shell completely.
+   position:absolute + inset:0 (rather than width/height:100% as an
+   in-flow flex child) sidesteps a common CSS gotcha: percentage heights
+   don't always resolve reliably through a chain of flex containers sized
+   by flex-grow rather than an explicit height, which is exactly the case
+   here (.network-panel -> .network-diagram-shell are both flex-sized).
+   Absolutely-positioned descendants resolve against the nearest
+   position:relative ancestor's actual laid-out box regardless of how
+   that ancestor's own size was determined, which is more reliable. */
 .network-question-form .network-reference-image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   max-width: 100%;
@@ -1240,6 +1251,7 @@ h1 { margin-top: 0; }
   object-fit: contain;
   object-position: center;
   display: block;
+  margin: auto;
 }
 
 /* Right panel: fill height, no scroll, flex column so each question gets half */
