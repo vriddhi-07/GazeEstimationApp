@@ -36,6 +36,20 @@ def strip_emojis(text: str) -> str:
     # Collapse any double spaces left behind after removing emojis.
     return re.sub(r"\s{2,}", " ", cleaned).strip()
 
+
+# Some IMDb-style reviews append a trailing "Guide: ..." parental content
+# note (profanity/violence/sex-and-nudity call-outs) after the reviewer's
+# actual opinion — not part of the review itself, and not something we
+# want participants reading mid-study. e.g.:
+#   "...Needed to be shorter.Guide: F-word. No sex or nudity."
+#   "...Guide: No sex or nudity. 2 F-bombs for the kids. Thank you..."
+_CONTENT_GUIDE_PATTERN = re.compile(r"\s*Guide:.*$", flags=re.IGNORECASE)
+
+
+def strip_content_guide_note(text: str) -> str:
+    cleaned = _CONTENT_GUIDE_PATTERN.sub("", text)
+    return re.sub(r"\s{2,}", " ", cleaned).strip()
+
 MOVIE_METADATA = [
     # --- SET 1 (Users 1, 2, 3, 4) ---
     {
@@ -213,9 +227,10 @@ MOVIE_METADATA = [
 def load_reviews_by_movie() -> dict[str, list[dict]]:
     """
     Load the JUMR CSV and bucket reviews by movie name.
-    Strips emojis from review text, then keeps only reviews that are
-    MAX_REVIEW_WORDS words or fewer (measured AFTER emoji stripping).
-    Each entry is {"text": ..., "sentiment": ..., "word_count": ...}.
+    Strips emojis and trailing "Guide: ..." content-rating notes from review
+    text, then keeps only reviews that are MAX_REVIEW_WORDS words or fewer
+    (measured after cleaning). Each entry is
+    {"text": ..., "sentiment": ..., "word_count": ...}.
     """
     buckets: dict[str, list[dict]] = {}
 
@@ -230,6 +245,7 @@ def load_reviews_by_movie() -> dict[str, list[dict]]:
                 continue
 
             review_text = strip_emojis(review_text)
+            review_text = strip_content_guide_note(review_text)
             if not review_text:
                 continue
 
