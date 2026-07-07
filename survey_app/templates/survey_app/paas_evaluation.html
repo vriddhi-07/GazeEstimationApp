@@ -1,5 +1,13 @@
 {% extends "survey_app/base.html" %}
 
+{% block brand %}
+  {% if task_number == 1 %}Movie Review Study
+  {% elif task_number == 2 %}News Study
+  {% elif task_number == 3 %}Visualisation Study
+  {% else %}Sentiment Analysis Study
+  {% endif %}
+{% endblock %}
+
 {% block content %}
 <style>
   .paas-slider-container {
