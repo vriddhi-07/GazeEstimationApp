@@ -70,7 +70,6 @@ body {
 .brand {
   font-weight: 800;
   letter-spacing: 0.02em;
-  font-size: 1.5rem;
 }
 
 .container {
@@ -1189,6 +1188,20 @@ h1 { margin-top: 0; }
   gap: 1.25rem;
   height: calc(100dvh - 11rem);
   overflow: hidden;
+}
+
+/* Metro maps are wide (~16:9-ish) images that get badly letterboxed at a
+   50/50 split — the container ends up tall and narrow relative to the
+   image, so object-fit: contain shrinks it down to fit the width and
+   leaves a lot of unused vertical space. Giving the map column much more
+   width lets the image scale up until height becomes the binding
+   constraint instead, using far more of the available space.
+   (Selector matches the specificity of the generic rule above and is
+   declared after it, so it wins the cascade for these specific slugs.) */
+.question-form.split-network-form-singapore-metro-map,
+.question-form.split-network-form-bengaluru-metro-map,
+.question-form.split-network-form-delhi-metro-map {
+  grid-template-columns: minmax(0, 72%) minmax(300px, 28%);
 }
 
 /* Left panel: fill all vertical space, no scroll */
