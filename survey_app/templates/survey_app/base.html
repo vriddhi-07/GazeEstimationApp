@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sentiment Analysis Study</title>
+  <title>Eye Gaze Study</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'survey_app/css/styles.css' %}?v=20260619-4">
   <script type="module">
@@ -24,7 +24,7 @@
   data-reset-capture-session="{{ reset_capture_session|default:False|yesno:'1,0' }}"
 >
   <header class="topbar">
-    <div class="brand">{% block brand %}Sentiment Analysis Study{% endblock %}</div>
+    <div class="brand">{% block brand %}Eye Gaze Study{% endblock %}</div>
     <div class="topbar-right">
       <div class="session-timer" id="session-timer">10:00</div>
       {% if study_progress_total %}
