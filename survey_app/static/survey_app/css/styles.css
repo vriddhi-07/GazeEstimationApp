@@ -109,25 +109,28 @@ body {
 }
 
 .progress-bar-track {
-  width: 6rem;
-  height: 0.4rem;
+  width: 6.5rem;
+  height: 0.55rem;
   border-radius: 999px;
-  background: rgba(20, 25, 38, 0.1);
+  background: #e1e5ee;
+  border: 1px solid rgba(20, 25, 38, 0.18);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: #1f8f5f;
+  min-width: 2px;
+  background: linear-gradient(90deg, #2fae74, #1a7a4f);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
 
 .progress-bar-label {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #4a5170;
+  color: #14192f;
   white-space: nowrap;
 }
 
