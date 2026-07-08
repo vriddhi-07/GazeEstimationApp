@@ -80,7 +80,7 @@ body {
 .session-timer {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  font-size: 1.5rem;
+  font-size: 1.05rem;
   color: #14192f;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
@@ -92,6 +92,43 @@ body {
 .session-timer.session-timer-expired {
   color: #b3261e;
   background: rgba(179, 38, 30, 0.12);
+}
+
+.topbar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 4.5rem;
+}
+
+.progress-bar-track {
+  width: 6rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: rgba(20, 25, 38, 0.1);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #1f8f5f;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #4a5170;
+  white-space: nowrap;
 }
 
 .container {

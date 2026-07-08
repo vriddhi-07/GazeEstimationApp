@@ -25,7 +25,17 @@
 >
   <header class="topbar">
     <div class="brand">{% block brand %}Sentiment Analysis Study{% endblock %}</div>
-    <div class="session-timer" id="session-timer">10:00</div>
+    <div class="topbar-right">
+      <div class="session-timer" id="session-timer">10:00</div>
+      {% if study_progress_total %}
+      <div class="progress-bar-wrap" title="Task progress">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: {{ study_progress_percent }}%;"></div>
+        </div>
+        <div class="progress-bar-label">{{ study_progress_completed }}/{{ study_progress_total }}</div>
+      </div>
+      {% endif %}
+    </div>
   </header>
   <script>
     (function () {
