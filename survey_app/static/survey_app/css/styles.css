@@ -1190,25 +1190,19 @@ h1 { margin-top: 0; }
   overflow: hidden;
 }
 
-/* Singapore & Delhi maps are wide (~16:9 / ~5:4-ish) images that get badly
-   letterboxed at a 50/50 split — the container ends up tall and narrow
-   relative to the image, so object-fit: contain shrinks it down to fit
-   the width and leaves a lot of unused vertical space. Giving the map
-   column much more width lets the image scale up until height becomes
-   the binding constraint instead, using far more of the available space.
+/* Singapore, Delhi & Bengaluru maps are wide-ish (~16:9 to ~5:4) images
+   that get badly letterboxed at a 50/50 split — the container ends up
+   tall and narrow relative to the image, so object-fit: contain shrinks
+   it down to fit the width and leaves a lot of unused vertical space.
+   Giving the map column much more width lets the image scale up until
+   height becomes the binding constraint instead, using far more of the
+   available space.
    (Selector matches the specificity of the generic rule above and is
    declared after it, so it wins the cascade for these specific slugs.) */
 .question-form.split-network-form-singapore-metro-map,
-.question-form.split-network-form-delhi-metro-map {
-  grid-template-columns: minmax(0, 72%) minmax(300px, 28%);
-}
-
-/* Bengaluru's map is a perfect square (1:1), unlike Singapore/Delhi's
-   wider images — the same 72% width used above overshoots what a square
-   image needs to fill the container height, leaving empty space on
-   either side. Give it its own smaller, correctly-proportioned share. */
+.question-form.split-network-form-delhi-metro-map,
 .question-form.split-network-form-bengaluru-metro-map {
-  grid-template-columns: minmax(0, 46%) minmax(420px, 54%);
+  grid-template-columns: minmax(0, 72%) minmax(300px, 28%);
 }
 
 /* Left panel: fill all vertical space, no scroll */
