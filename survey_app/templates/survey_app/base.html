@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Eye Gaze Study</title>
+  <title>Sentiment Analysis Study</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'survey_app/css/styles.css' %}?v=20260619-4">
   <script type="module">
@@ -24,8 +24,49 @@
   data-reset-capture-session="{{ reset_capture_session|default:False|yesno:'1,0' }}"
 >
   <header class="topbar">
-    <div class="brand">{% block brand %}Eye Gaze Study{% endblock %}</div>
+    <div class="brand">{% block brand %}Sentiment Analysis Study{% endblock %}</div>
+    <div class="session-timer" id="session-timer">10:00</div>
   </header>
+  <script>
+    (function () {
+      // One 10-minute countdown for the whole browser session, not per
+      // page: the end time (an absolute timestamp) is stored in
+      // sessionStorage the first time this ever runs in this tab, and
+      // every subsequent page load just reads that same end time and
+      // keeps counting down from wherever it actually is. Clearing/
+      // closing the tab starts a fresh 10 minutes (sessionStorage is
+      // per-tab and doesn't survive that), matching how ParticipantSession
+      // itself is scoped.
+      var STORAGE_KEY = "sessionTimerEndsAt";
+      var DURATION_MS = 10 * 60 * 1000;
+
+      var endsAt = Number(sessionStorage.getItem(STORAGE_KEY));
+      if (!endsAt || Number.isNaN(endsAt)) {
+        endsAt = Date.now() + DURATION_MS;
+        sessionStorage.setItem(STORAGE_KEY, String(endsAt));
+      }
+
+      var el = document.getElementById("session-timer");
+
+      function render() {
+        var remainingMs = endsAt - Date.now();
+        if (remainingMs <= 0) {
+          el.textContent = "00:00";
+          el.classList.add("session-timer-expired");
+          clearInterval(intervalId);
+          return;
+        }
+        var totalSeconds = Math.ceil(remainingMs / 1000);
+        var minutes = Math.floor(totalSeconds / 60);
+        var seconds = totalSeconds % 60;
+        el.textContent =
+          String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+      }
+
+      render();
+      var intervalId = setInterval(render, 1000);
+    })();
+  </script>
   <main class="container">
     {% block content %}{% endblock %}
   </main>

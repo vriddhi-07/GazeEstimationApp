@@ -65,11 +65,32 @@ body {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(20, 25, 38, 0.08);
   backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .brand {
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.session-timer {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  color: #14192f;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(20, 25, 38, 0.06);
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.session-timer.session-timer-expired {
+  color: #b3261e;
+  background: rgba(179, 38, 30, 0.12);
 }
 
 .container {
