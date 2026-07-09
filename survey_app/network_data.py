@@ -190,9 +190,9 @@ NETWORK_DIAGRAMS = [
         "image_scale": "100%",
         "nodes": [],
         "edges": [],
-        "question_one": "From Joo Koon to Punggol Coast, how many interchanges are present in the shortest path?",
+        "question_one": "From Joo Koon to Punggol, how many interchanges are present in the shortest path?",
         "question_one_options": ["Three", "Four", "Five", "Six"],
-        "question_two": "How many interchange staions are visible in the map?",
+        "question_two": "How many interchange stations are visible in the map?",
         "question_two_options": ["Ten", "Twelve", "Thirteen", "Eleven"],
     },
 
