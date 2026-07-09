@@ -1,13 +1,32 @@
 from .models import ParticipantSession
 
 
+# Pages before task 1 (the movie carousel) never show the progress bar,
+# even for a returning/authenticated participant who already has responses
+# recorded (e.g. revisits login after their session was reset, or a retry).
+# This is enforced here rather than relying only on each pre-task template
+# overriding {% block header_progress %} empty, since that's easy to miss
+# and was the source of a real bug (bar showing on the login page with a
+# stale, non-zero count). Keeping both is belt-and-suspenders, but this is
+# the one that actually guarantees it regardless of the template state.
+PRE_TASK_URL_NAMES = {
+    "welcome",  # login page - url name is "welcome", see urls.py
+    "consent",
+    "demographics",
+    "expertise_rating",
+    "capture_session",
+}
+
+
 def participant_progress(request):
     """
     Adds study_progress_completed / study_progress_total to every template's
     context, for the header progress bar. Runs on every request (that's how
     Django context processors work), so it has to degrade to {} quietly for
-    anonymous users, admin/staff pages, or any request where the logged-in
-    user doesn't have a ParticipantSession yet (nothing to show yet).
+    anonymous users, admin/staff pages, pre-task pages (login through
+    capture-session — the bar only starts from the movie carousel onward),
+    or any request where the logged-in user doesn't have a ParticipantSession
+    yet (nothing to show yet).
 
     Total is the same 3+3+3=9 minimum used elsewhere (MINIMUM_REQUIRED_*),
     not a hardcoded "9" — if those thresholds ever change, this follows.
@@ -16,6 +35,10 @@ def participant_progress(request):
     retry) doesn't show as more than 9/9.
     """
     if not request.user.is_authenticated:
+        return {}
+
+    url_name = getattr(request.resolver_match, "url_name", None)
+    if url_name in PRE_TASK_URL_NAMES:
         return {}
 
     participant = ParticipantSession.objects.filter(user=request.user).first()
