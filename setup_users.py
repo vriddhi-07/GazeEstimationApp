@@ -12,9 +12,9 @@ group3, _ = Group.objects.get_or_create(name="Set 3")
 # up the full 30 RealEye licenses including the 3 originally set aside as
 # trials — adjust here later if those 3 need to stay reserved instead).
 cohorts = {
-    group1: ['1', '2', '3', '4', '13', '14', '15', '16', '17', '28'],
-    group2: ['5', '6', '7', '8', '18', '19', '20', '21', '22', '29'],
-    group3: ['9', '10', '11', '12', '23', '24', '25', '26', '27', '30']
+    group1: ['1', '2', '3', '4', '13', '14', '15', '16', '17', '28','31','32'],
+    group2: ['5', '6', '7', '8', '18', '19', '20', '21', '22', '29','33','34'],
+    group3: ['9', '10', '11', '12', '23', '24', '25', '26', '27', '30','35','36']
 }
 
 # Create users and assign to groups
