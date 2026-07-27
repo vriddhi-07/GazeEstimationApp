@@ -8,3 +8,5 @@ node_modules/
 media/
 staticfiles/
 *.log
+exports/
+*_pts.csv
